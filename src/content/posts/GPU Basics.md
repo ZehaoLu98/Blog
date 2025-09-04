@@ -5,7 +5,7 @@ description: ''
 image: ''
 tags: [GPU, Note]
 category: 'Computer Architecture'
-draft: false 
+draft: true 
 lang: 'en'
 ---
 
