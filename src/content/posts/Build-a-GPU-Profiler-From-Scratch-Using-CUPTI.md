@@ -5,7 +5,7 @@ description: 'How to create a fake, customized Nsight Compute'
 image: ''
 tags: [GPU, Note]
 category: 'Computer Architecture'
-draft: true 
+draft: false 
 lang: 'en'
 ---
 # Hole Digged
