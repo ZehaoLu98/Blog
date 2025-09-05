@@ -14,21 +14,21 @@ lang: 'en'
 - Host: CPU
 
 # Introduction
-Nowadays, AI becomes an essential tool in our lives. With the tremendous compute resources needed by both training and inference of LLMs, GPUs were brought under the spot light because of its unique competence. In this blog, I will go through the most important concepts of both CUDA programming and Nvidia GPU architecture and explore the relationship between GPU software and hardware. 
+Artificial intelligence is now a part of everyday life, powering everything from search engines to chatbots. But behind the scenes, it takes enormous compute power to train and run large language models (LLMs). This is where GPUs step into the spotlight. Their architecture is uniquely designed to handle the scale of parallelism that modern AI demands. In this post, I’ll introduce some of the core ideas of CUDA programming, Nvidia GPU architecture, and highlight how Nvidia software and hardware work together.
 ## GPU vs CPU
-Unlike CPU, GPUs devote lots of its silicon real estate into compute resources. The most recent GB202, for example, have 24,576 CUDA cores. In contrary, most mordern CPUs have only less than 100 cores. 
+CPUs are built for versatility. They have a small number of powerful cores, optimized for handling complex tasks one after another. GPUs, on the other hand, are built for raw parallelism. A single high-end GPU like the GB202 packs over 24,000 CUDA cores—orders of magnitude more than a typical CPU.
 
-However, to make use all the cores, we need at least 24,576 threads, and even more if considering the switch of threads because of the stall. This implies that GPU programming style should be totally different from CPU programming, requiring to spawn thousands of threads so that most of the compute resources on a GPU are utilized.
+Of course, having thousands of cores only helps if you have thousands of tasks to run in parallel. That’s why GPU programming looks very different from CPU programming: instead of focusing on a handful of threads, you need to think in terms of thousands.
 
-Additionally, the GPU and the host memory are usually disjoint, so an explicit memory transfer call is usually needed to move the data between the CPU and GPU. It is totally different in a CPU program, where the memory load/store are usually implicit.
+Additionally, the GPU and the host memory are usually disjoint, so an explicit memory transfer call is usually required to move the data between the CPU and GPU. It is totally different in a CPU program, where the memory load/store are usually implicit.
 
 Finally, the GPU may adhere to a different floating point representation, which may cause the result of a GPU program differs from a CPU program.
 :::tip
-It's a good habbit to verify the result of the GPU program with the result of an equivalent CPU program.
+It's a good habbit to verify the result of the GPU program with an equivalent CPU result.
 :::
 
 # CUDA Programming Model
-A CUDA program is essentially a C/C++ program with some CUDA extension. The CUDA part, i.e. device code, will be compiled separately and linked with the host part.
+A CUDA program is essentially a C/C++ program with some CUDA extension. The CUDA part, i.e. device code, will be compiled separately and linked with the host code.
 
 ## CUDA Function Definition
 The functions are devided into three categories:
