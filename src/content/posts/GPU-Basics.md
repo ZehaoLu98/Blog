@@ -161,7 +161,7 @@ The blocks are orgnized in a 3D structure, called grid. Each block is a group of
 ```c++
  int i = blockIdx.x * blockDim.x + threadIdx.x;ß
 ```
-```tip
+:::tip
 You can think of the orgnization of threads like a 6D array:
 ```c++
 Thread t[gridDim.z][gridDim.y][gridDim.x][blockDim.z][blockDim.y][blockDim.x];
@@ -170,6 +170,7 @@ Or a 3D array:
 ```c++
 Thread t[gridDim.z*blockDim.z]
 ```
+:::
 The dimension of the grid doesn't matter performance-wise. For example, (16,16,0) and (256, 0, 0) both consist of 256 blocks, and from GPU side, there is no real difference. What really matters is the number of blocks. Each block can only run on a single SM(Steamming Multiprocessor), so to fully use all the GPU compute resources, at least SM-size of blcoks should be defined if you don't want to waste resources. The number of SMs varies among different GPU devices. On A100, there are 108 SMs, so at least 108 blocks should be given, no matter how the grid is defined, e.g. there is no difference between (4, 27, 0) and (108, 0, 0). This also applies to block dimensions. The dimensions of the blcok doesn't affect the performance, but the total number of threads per block matters.
 
 Addition to the Grid and Blocks, threads on a block can be further separate to different warps, which are the scheduling units of the threads on an SM that are executing the same instructions and are scheduled to run at the same time. This is the __SIMT__ part of the GPU. This will be discussed when the architeture is explained.
