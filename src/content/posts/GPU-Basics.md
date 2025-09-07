@@ -179,9 +179,9 @@ Writing a runnable CUDA program is easy, but writing the one that can unleash th
 
 ## Compute Resources
 ### SP  
-GPU cores are essentially vector processing units that can apply a single instruction on large amount of data. Each of the core is called *SP*(Stream Processor) or CUDA core and has its own pipeline. In each cycle, a warp scheduler issues one command to one warp, which usually consists of 32 threads. These 32 threads will execute the instruction on 32 SPs simultaneously. This is why this execution model is called SIMT(Single Instruction Multiple Threads), as one instruction can be broadcasted to multiple data and execute on different pipelines at the same time. SIMD is similar to the SIMT. The only difference between SIMT and SIMD is that the number of parallel execution is determined by software instead of hardware. 
+GPU cores are essentially vector processing units that can apply a single instruction on large amount of data. Each of the core is called *SP*(Stream Processor) or CUDA core and has its own pipeline. In each cycle, a warp scheduler issues 1 or 2(if they are independent) commands to one warp, which usually consists of 32 threads. These 32 threads will execute the instruction on 32 SPs simultaneously. This is why this execution model is called SIMT(Single Instruction Multiple Threads), as one instruction can be broadcasted to multiple data and execute on different pipelines at the same time. SIMD is similar to the SIMT. The only difference between SIMT and SIMD is that the number of parallel execution is determined by software instead of hardware. Nowadays, the GPU have 4 warp scheduler, therefore at most 4 instruction sequence can be issued to 4 warps simultaneously.
 ### SM
-Multiple SPs executes instructions under the control of a single *SM*(Streaming Muliprocessor).   the w One GPU can have lots of SMs. As mentioned above, A100 have 108 SMs. 
+Multiple SPs executes instructions under the control of a single *SM*(Streaming Muliprocessor). One GPU can have lots of SMs. As mentioned above, A100 have 108 SMs. 
 
 ## Memory Architecture
 
