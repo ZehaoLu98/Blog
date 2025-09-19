@@ -17,7 +17,9 @@ The data shown in this blog is collected via CUPTI Activity API and Range Profil
 # llm.cpp Introduction
 In this blog, we will profile [llm.cpp](https://github.com/zhangpiu/llm.cpp) as an entry-level example of LLM profiling. llm.cpp is a C++ re-implementation of [llm.c](https://github.com/karpathy/llm.c), reproducing the GPT-2 model from OpenAI. It uses a C++ template-only library, Eigen, to do matrix multiplication and computational optimization, which also increases the runtime performance by avoiding the dynamic linkage.
 
-By default, llm.cpp will load the training data in B=4 sequences each batch, T=64 tokens per sequence. Each token will have C=768 embeddings. It will do 40 steps of training, each of which will have a forward pass to calculate the loss, i.e. softmax cross entropy, and a backward pass to calculate gradients and update weights using an Adam Optimizer.
+By default, llm.cpp will load the training data in B=4 sequences each batch, T=64 tokens per sequence in each training step. Each token will have C=768 embeddings. It will do 40 steps of training, each of which will have a forward pass to calculate the loss, i.e. softmax cross entropy, and a backward pass to calculate gradients and update weights using an Adam Optimizer.
 
 Here is the big picture of the forward process of llm.cpp:
-![]("./llmcpp_process.png")
+![Forward]("./llmcpp_process.png")
+
+The input of each training step is a vector of B*T tokens. In the embedding, each token is mapped to an embedding of size C(i.e. 768 floats by default), making the output matrix to be [BT, C]. An position encoding offsets are then applied to each token, which is only related to the position of token within the sequence.
