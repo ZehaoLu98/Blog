@@ -10,7 +10,7 @@ lang: 'en'
 ---
 # CUPTI Introduction
 
-CUPTI is a profiling and tracing api that exposes the hardware counters of the NVIDIA GPUs and enables developers to build custom profilers. If you used Nsight Compute or Nsight System before, you won't be unfarmiliar with it, because they are built on top of CUPTI, which meanse you can built whatever Nsight Compute or Nsight System implemented, plus extra features you would like to have.
+CUPTI is a profiling and tracing api that exposes the hardware counters of NVIDIA GPUs, collects CUDA runtime information and enables developers to build custom profilers. If you used Nsight Compute or Nsight System before, you won't be unfamiliar with it, because they are built on top of CUPTI, which means you can built whatever Nsight Compute or Nsight System implemented, plus extra features you would like to have.
 
 
 The functionality of CUPTI can be divided into multiple sections, including 
