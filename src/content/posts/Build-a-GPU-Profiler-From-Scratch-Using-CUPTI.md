@@ -10,26 +10,54 @@ lang: 'en'
 ---
 # CUPTI Introduction
 
-CUPTI is a profiling and tracing api that exposes the hardware counters of NVIDIA GPUs, collects CUDA runtime information and enables developers to build custom profilers. If you used Nsight Compute or Nsight System before, you won't be unfamiliar with it, because they are built on top of CUPTI, which means you can built whatever Nsight Compute or Nsight System implemented, plus extra features you would like to have.
+CUPTI is a set of API that enables developers to both retrieve hardware counters from NVidia GPUs and trace the host-side activities on CUDA. It serves as the foundation of NSight Compute, the official GPU profiler provided by NVidia. With CUPTI, independent developers can develop customized profilers that leverage the same sets of metrics and derive their own specialized insights through custom data processing
 
+In the big picture, CUPTI has two key functionalities:
 
-The functionality of CUPTI can be divided into multiple sections, including 
+* Tracing: collecting host-side activities, like kernel launches and memset, etc.  
+* Profiling: collecting hardware counters and other derived metrics like throughput.
 
-* the Activity API,
-* the Callback API,
-* the Host Profiling API,
-* the Range Profiling API,
-* the PC Sampling API,
-* the SASS Metric API,
-* the PM Sampling API,
-* the Checkpoint API,
+It can also be divided into multiple sets by the way it collects data, including
+
+* the Activity API,  
+* the Callback API,  
+* the Host Profiling API,  
+* the Range Profiling API,  
+* the PC Sampling API,  
+* the SASS Metric API,  
+* the PM Sampling API,  
+* the Checkpoint API,  
 * the Profiling API,
-
-
-The Activity API , Callback API are host-side tracing APIs, which can collect timing or other information of specific activities or events, whereas the Range and Range Profiling API are device-side, which can provide both raw counter values and upper-level metrics like throughput and ratios. In this post, The Activity and Range PRofiling API will be focused to build the profiler.
 
 :::note
 
 Profiling API will no longer be supported for architectures after Blackwell, and has been deprecated in CUDA 13.0 release. Use Range Profiling API instead, which was introduced in CUDA 12.6 release.
 
 :::
+
+In this tutorial, we will focus on Activity, Callback and Range Profiling API and introduce our custom profiler GPU Memory Profiler(GMP) built on top of Activity and Range Profiling API.
+
+# Activity API
+refer to cupti tutorial
+how the buffer works
+
+# Callback API
+refer to cupti tutorial
+Subscriptions
+
+# Range Profiling API
+## Range
+## Metrics
+## Replay
+
+# Design a custom GPU Profiler
+## Structure
+UML
+## How it is working
+How we manage the activity record
+How we match the activity records with metrics from range profiling
+Utilized backend from the examples in the SDK
+## Python Wrapper
+Dependency Graph
+Pybind
+
