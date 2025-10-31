@@ -8,8 +8,8 @@ import type {
 import { LinkPreset } from "./types/config";
 
 export const siteConfig: SiteConfig = {
-	title: "Secret Lab",
-	subtitle: "A place for my experiment reports",
+	title: "Zehao's Lab",
+	subtitle: "Place to share my thoughts",
 	lang: "en", // Language code, e.g. 'en', 'zh_CN', 'ja', etc.
 	themeColor: {
 		hue: 65, // Default hue for the theme color, from 0 to 360. e.g. red: 0, teal: 200, cyan: 250, pink: 345
@@ -54,8 +54,8 @@ export const navBarConfig: NavBarConfig = {
 
 export const profileConfig: ProfileConfig = {
 	avatar: "assets/images/Makise_Cruise_Q.jpg", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
-	name: "Zehao Lu (鲁泽昊)",
-	bio: "Just a tech guy",
+	name: "Zehao Lu",
+	bio: "Developer, Gamer, Anime Enthusiast",
 	links: [
 		{
 			name: "LinkedIn",
