@@ -4,7 +4,7 @@ published: 2025-09-18
 description: ''
 image: ''
 tags: ['LLM', 'CUPTI', 'GPU', Profiling]
-category: ''
+category: 'Profiling Tutorials'
 draft: true 
 lang: 'en'
 ---

@@ -4,11 +4,11 @@ published: 2025-10-31
 description: 'Explain Activity API and Range Profiling API with samples'
 image: ''
 tags: [GPU, Note, CUPTI, Profiling]
-category: 'CUPTI Tutorial'
+category: 'Profiling Tutorials'
 draft: false 
 lang: 'en'
 ---
-# CUPTI Introduction
+# Introduction
 
 CUPTI is a set of API embedded in CUDA toolkit that enables developers to both retrieve hardware counters from NVidia GPUs and trace the host-side activities on CUDA. It serves as the foundation of NSight Compute, the official GPU profiler provided by NVidia. With CUPTI, independent developers can develop customized profilers that leverage the same sets of metrics and derive their own specialized insights through custom data processing
 
@@ -34,20 +34,30 @@ Starting with **CUDA 13.0**, the legacy *Profiling API* is **deprecated** for fu
 Use the **Range Profiling API**, introduced in **CUDA 12.6**, as the long-term replacement.
 :::
 
-This tutorial focuses on **Activity**, **Callback**, and **Range Profiling** APIs — and how we leveraged them to build our in-house **GPU Memory Profiler (GMP)**.
+This tutorial focuses on the introduction of **Activity** and **Range Profiling** APIs. Some ready-to-deploy samples are also provided to enable a quick start. In addition, I will provide some tutorials on how I leveraged these APIs to build our in-house **GPU Memory Profiler (GMP)**.
 
 # Activity API
 Activity API provides a simple and low-overhead option to collect traces of various events in CUDA runtime and driver API. Common use case includes timing the kernel launches and memory transfers. The overhead is low compared with other metrics collection APIs because it only execute extra host-side instruments, whereas other metrics APIs, for example, Range Profiling API, will read the hardware performance monitor units, which involves more memory activities and thus is more time-consuming. Therefore if we don't need any low-level device-related data, Activity API is usually the way to go.
 
-In high level, we need to enables specific types of activity trace collection, register the callbacks to fulfill buffer requests and handles buffer completion. We will detail all of them in sections below. 
+At the high level, we need to enables specific types of activity trace collection, register the callbacks to fulfill buffer requests and handles buffer completion. We will detail them below. 
 
 ## Enable Activity Collection
 To start with, we need to enable the activity types we would like to collect for. Here is the function:
 ```cpp
 CUptiResult cuptiActivityEnable(CUpti_ActivityKind kind);
 ```
-There are quite a lot of choices for the *kind* argument listed in the official docs [here](https://docs.nvidia.com/cupti/api/group__CUPTI__ACTIVITY__API.html#_CPPv418CUpti_ActivityKind). 
+There are quite a lot of choices for the *kind* argument listed in the official docs [here](https://docs.nvidia.com/cupti/api/group__CUPTI__ACTIVITY__API.html#_CPPv418CUpti_ActivityKind). Here is the big picture what you can collect through Activity APIs:
 
+* Kernel and Memory Operations — execution of kernels, memory copies (H↔D, D↔D), and memory sets.
+* API Calls — CUDA Runtime and Driver API calls, including durations and parameters.
+* Device and Memory Usage — device info, allocations, unified memory page migrations, and memory pool events.
+* Streams, Graphs, and Synchronization — stream timelines, CUDA graph execution, barriers, and synchronization events.
+* Markers and Correlations — NVTX markers and external correlation to align GPU traces with host or other systems.
+* Interconnect and I/O — NVLink and PCIe transfer activities across devices or between CPU and GPU.
+* JIT and Overhead Information — JIT compilation, CUPTI’s own overhead, and preemption events.
+:::note
+Metric-related types will be disabled starting from CUDA 13.0.
+:::
 :::note
 To avoid unnecessary overheads, it is recommended to enable as less kinds of activities as possible since the overhead is proportional to the number of kernels.
 :::
@@ -108,6 +118,7 @@ static void CUPTIAPI bufferCompletedThunk(CUcontext ctx, uint32_t streamId,
 
 void GmpProfiler::bufferRequestedImpl(uint8_t **buffer, size_t *size, size_t *maxNumRecords)
 {
+    // Allocate a 4MB activity record buffer
     *size = 4 * 1024 * 1024;
     *buffer = (uint8_t *)malloc(*size);
     *maxNumRecords = 0;
@@ -347,6 +358,15 @@ ProfilerRange EvaluateCounterData(
     return profilerRange;
 }
 ```
+# Next
+If you are interested at a bigger profiler project, you can refer to my other posts:
+
+*[GMP_v2](): under construction
+*[GMP_v1](): completed
+
+It's an evolving project. The versions are implemented with fundamental structural difference, therefore I will preserve the tutorials of these versions to provide different design choices.
+
+
 
 # Design a custom GPU Profiler
 ## Structure

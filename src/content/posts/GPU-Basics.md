@@ -3,8 +3,8 @@ title: Nvidia GPU Basics
 published: 2025-09-01
 description: ''
 image: ''
-tags: [GPU, Note]
-category: 'Computer Architecture'
+tags: [GPU]
+category: 'Reading Notes'
 draft: false 
 lang: 'en'
 ---
