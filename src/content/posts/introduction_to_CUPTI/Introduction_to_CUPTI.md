@@ -57,10 +57,10 @@ The most common activities we trace is kernel launches. There are two correspond
 * CUPTI_ACTIVITY_KIND_KERNEL
 * CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL
   
-Despite of little difference on naming, they cause huge impact on the kernel execution. CUPTI_ACTIVITY_KIND_KERNEL forces serializing the kernel launches, i.e. all kernels will be executed separately. Whereas CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL won't affect the execution of kernels. If the program to trace is single-stream, this difference doesn't matter. However, for multi-stream program, you need to consider the effect caused by the choice of activity types.
+Despite of little difference on naming, they cause huge impact on the kernel execution. CUPTI_ACTIVITY_KIND_KERNEL forces serializing the kernel launches, i.e. all kernels will be executed separately. Whereas CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL preserves the original concurrency. For single-stream applications, these behave identically. For multi-stream workloads, CUPTI_ACTIVITY_KIND_KERNEL will serialize the kernels, but CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL will keep the execution intact.
 
 ## Activity Record Buffer
-CUPTI manages the buffer in an asynchronous way. At the beginning of the program, user need to define two callbacks that enable CUPTI to request new buffers and hand over the filled buffer. 
+CUPTI manages the buffer in an asynchronous way. At the beginning of the program, you need to define two callbacks that enable CUPTI to request new buffers and hand over the filled buffer. 
 ```cpp
 // Callback Registration
 CUptiResult cuptiActivityRegisterCallbacks(CUpti_BuffersCallbackRequestFunc funcBufferRequested, CUpti_BuffersCallbackCompleteFunc funcBufferCompleted);
@@ -71,14 +71,14 @@ typedef void (*CUpti_BuffersCallbackCompleteFunc)(CUcontext context, uint32_t st
 ```
 
 :::note
-Avoid putting time-consuming operations in callbacks.
+Avoid putting time-consuming operations in these callbacks.
 :::
 
 To store the trace records, you need to provide host-side buffer when CUPTI runs out of buffer and ask for it through **funcBufferRequested**. Typically, the buffer should be 1~10MB  The **funcBufferCompleted** is triggered either when the buffer is full or per the user requests. It passes the buffer back to the user with the current available trace records. In this callback, user can iterate records through **cuptiActivityGetNextRecord**. The record you get is in a general record type. Each type of activities has its own record struct, so you can check the comment on the enum to confirm which type you should convert the general record type to. 
 
-There are multiple ways for users to flush the buffer and retrieve the activity records:
+There are multiple ways to flush the buffer and retrieve the activity records:
 
-* **cuptiActivityFlushAll(0)** will trigger the **funcBufferCompleted** with completed traces. 
+* **cuptiActivityFlushAll(0)** will trigger the **funcBufferCompleted** with completed traces immediately. 
 * **cuptiActivityFlushPeriod(uint32_t time)** will call **funcBufferCompleted** with a fixed interval.
 * Wait the buffer to be full.
 
@@ -108,7 +108,7 @@ static void CUPTIAPI bufferCompletedThunk(CUcontext ctx, uint32_t streamId,
 
 void GmpProfiler::bufferRequestedImpl(uint8_t **buffer, size_t *size, size_t *maxNumRecords)
 {
-    *size = 16 * 1024;
+    *size = 4 * 1024 * 1024;
     *buffer = (uint8_t *)malloc(*size);
     *maxNumRecords = 0;
 }
@@ -166,45 +166,71 @@ int main(){
     // The callbacks may have been called multiple times.
     some_cuda();
 
+    // Ensure all the kernels have finished
+    cudaDeviceSynchronize()
+
     // All the job done, dump all the remaining trace records
     cuptiActivityFlushAll(0)
 }
 ```
 
 # Range Profiling API
-Range Profiling API provides a way to collect context-level GPU metrics within specific ranges of the program.
+Range Profiling API provides fine-grained access to the context-level GPU metrics within user-defined code regions(ranges). It supersedes the older Profiling API and supports both auto and manual range definitions.
 
 ## Available Metrics
-Some of the metrics are directly from the performance monitor units of the GPU. For example:
+Metrics can originate directly from the GPU’s hardware performance monitor units (PMUs), for example:
 
 * SASS instruments issued
 * Memory footprints
 * GPU time executed
 * Active warps 
-* Stalled Cycles with various reasons
+* Stalled Cycles
 
-Some of metrics are derived from other metrics, like:
+Other metrics are derived from these raw counters, like:
 
 * Dram throughput
 * Cache hit rate
 * SM utilization
 
-There are huge amounts of metrics. You can query the full list through
+There are huge amounts of metrics. You can query the full list of available metrics through
 ```bash
 ncu --query-metrics
 ```
 
 ## Ranges Definition
-All the metrics are grouped with ranges. There are two ways to define range. 
-* Auto range mode, each kernel is automatically defined as a range. 
-* User range mode, a range is defined by wrapping the code a pair of **cuptiRangeProfilerPushRange**  **cuptiRangeProfilerPopRange**. The ranges can be nested. The metrics will be accumulated among multiple kernels.
+Each range represents a code region for which CUPTI accumulates metrics. There are two ways to define ranges:
+
+* Auto range mode, each kernel is automatically treated as a range. This mode includes a context synchronization at the end of each kernel launch, therefore only one kernel can be executed at the same time.
+* User range mode, a range is defined by wrapping the code a pair of **cuptiRangeProfilerPushRange**  **cuptiRangeProfilerPopRange**. Ranges can be nested, and metrics are accumulated across multiple kernel launches within the same range.
+
+```cpp
+// rangeProfilerObject: Profiler pointer returned by cuptiRangeProfilerEnable during initialization
+CUptiResult PushRange(CUpti_RangeProfiler_Object* rangeProfilerObject,const char *rangeName)
+{
+    CUpti_RangeProfiler_PushRange_Params pushRangeParams{CUpti_RangeProfiler_PushRange_Params_STRUCT_SIZE};
+    pushRangeParams.pRangeProfilerObject = rangeProfilerObject;
+    pushRangeParams.pRangeName = rangeName;
+    CUPTI_API_CALL(cuptiRangeProfilerPushRange(&pushRangeParams));
+    return CUPTI_SUCCESS;
+}
+
+// rangeProfilerObject: Profiler pointer returned by cuptiRangeProfilerEnable during initialization
+CUptiResult PopRange(CUpti_RangeProfiler_Object* rangeProfilerObject)
+{
+    CUpti_RangeProfiler_PopRange_Params popRangeParams{CUpti_RangeProfiler_PopRange_Params_STRUCT_SIZE};
+    popRangeParams.pRangeProfilerObject = rangeProfilerObject;
+    CUPTI_API_CALL(cuptiRangeProfilerPopRange(&popRangeParams));
+
+    return CUPTI_SUCCESS;
+}
+```
 
 ## Replay
-Each SM in NVIDIA GPUs only contains a small amount of performance registers for the metrics, but there might be thousands of data points needed to collect for all the metrics. Therefore sometimes it may not be possible to collect all the metrics with only single pass(execution) of the program. CUPTI introduces replay so that all the kernels can be re-executed with the same memory status. This ensures that all the metrics in each replay are collected under the same memory condition as if they are produced within a single pass. In the first pass, CUPTI saves a copy of the accessed memory content in this pass. Every time one pass finishes, CUPTI will restore the memory status using this copy. It is obvious that this kind of replays adds extra memory footprints to the memory. If the dram cannot store the backup, the host memory will store it. If even the host memory cannot hold it, the file system of the host will have to save it. The cost of the data transfer will be tremendous, so it's usually a good idea to keep the replayed area small.
+Each SM in NVIDIA GPUs only contains a small amount of performance registers for the metrics, but there might be thousands of data points needed to collect for all the metrics. Therefore sometimes it may not be possible to collect all the metrics with only single pass(execution) of the program. CUPTI introduces replay so that all the kernels can be re-executed with the same memory status. This ensures that all the metrics in each replay are collected under the same memory condition as if they are produced within a single pass. In the first pass, CUPTI saves a copy of the accessed memory content in this pass. Every time one pass finishes, CUPTI will restore the memory status using this copy. It is obvious that this kind of replays adds extra memory footprints to the memory. If the dram cannot store the backup, the host memory will store it. If even the host memory cannot hold it, the file system of the host will have to save it. which can drastically increase overhead, therefore it’s crucial to keep replayed regions small.
 
 There are three types of replay. 
 
-* Kernel replay will replay kernels separately so that only when CUPTI has collected all the metrics of a kernel will it proceeds to the next kernel. Because of the granularity, it might avoid the unnecessary transfer between host and device, but it can cause frequent allocation if there are excessive kernels. 
+* Kernel replay will replay each kernel separately so that only when CUPTI has collected all the metrics of a kernel will it proceeds to the next kernel. Because of the granularity, it might avoid the unnecessary transfer between host and device, but it can cause frequent allocation if there are excessive kernels. 
 * User replay lets user define how to replay through checkpoint API, which enables user to manually save and restore the memory status. It provides the most freedom, but with the cost of simplicity. 
 * Application replay re-executes the whole application with the same configuration. The execution path should be deterministic.
 
@@ -214,10 +240,44 @@ According to my experiments, User range + kernel replay always fail with:
 Function cuptiRangeProfilerSetConfig(&setConfigParams) failed with error(7): CUPTI_ERROR_INVALID_OPERATION
 :::
 
-All the range and replay mode options can be sent to CUPTI through **cuptiRangeProfilerSetConfig** during initialization.
+All the range and replay mode options can be sent to CUPTI through **cuptiRangeProfilerSetConfig** during initialization. Refer to the code block below for the sample implementation.
 
-## Counter Buffer
+## Counter Buffer 
 All the data is stored within a counter buffer provided during setup using **cuptiRangeProfilerSetConfig**.
+
+```cpp
+// range: CUPTI_UserRange or CUPTI_AutoRange
+// replayMode: CUPTI_UserReplay or CUPTI_KernelReplay
+// configImageBlob: host-side config image created through cuptiProfilerHostGetConfigImage during initialization
+// counterDataImage: host-side counter data image created through cuptiRangeProfilerCounterDataImageInitialize during initialization
+// rangeProfilerObject: Profiler pointer returned by cuptiRangeProfilerEnable during initialization
+CUptiResult SetConfig(
+    CUpti_ProfilerRange range,
+    CUpti_ProfilerReplayMode replayMode,
+    std::vector<uint8_t> &configImageBlob,
+    std::vector<uint8_t> &counterDataImage,
+    CUpti_RangeProfiler_Object* rangeProfilerObject)
+{
+    configImage.resize(configImageBlob.size());
+    std::copy(configImageBlob.begin(), configImageBlob.end(), configImage.begin());
+
+    CUpti_RangeProfiler_SetConfig_Params setConfigParams{CUpti_RangeProfiler_SetConfig_Params_STRUCT_SIZE};
+    setConfigParams.pRangeProfilerObject = rangeProfilerObject;
+    setConfigParams.pConfig = configImage.data();
+    setConfigParams.configSize = configImage.size();
+    setConfigParams.pCounterDataImage = counterDataImage.data();
+    setConfigParams.counterDataImageSize = counterDataImage.size();
+    setConfigParams.maxRangesPerPass = MAX_RANGE_NUM;
+    setConfigParams.numNestingLevels = MAX_NESTING_LEVELS;
+    setConfigParams.minNestingLevel = MIN_NESTING_LEVELS;
+    setConfigParams.passIndex = 0;
+    setConfigParams.targetNestingLevel = 1;
+    setConfigParams.range = range;
+    setConfigParams.replayMode = replayMode;
+    CUPTI_API_CALL(cuptiRangeProfilerSetConfig(&setConfigParams));
+    return CUPTI_SUCCESS;
+}
+```
 
 :::note
 According to my experiments, the max range of the counter buffer is around 2000~3000. Exceeding this number will cause error
@@ -226,6 +286,17 @@ Function cuptiRangeProfilerSetConfig(&setConfigParams) failed with error(7): CUP
 :::
 
 After finishing the profiling, you should call **cuptiRangeProfilerDecodeData** to transfer the metrics data from hardware to the buffer provided in **cuptiRangeProfilerSetConfig** and decode it. After the data is decoded, you can start to process the data into your data format. Here is the sample and you can adjust it based on your requirements:
+
+```cpp
+// rangeProfilerObject: Profiler pointer returned by cuptiRangeProfilerEnable during initialization
+CUptiResult DecodeCounterData(CUpti_RangeProfiler_Object* rangeProfilerObject)
+{
+    CUpti_RangeProfiler_DecodeData_Params decodeDataParams{CUpti_RangeProfiler_DecodeData_Params_STRUCT_SIZE};
+    decodeDataParams.pRangeProfilerObject = rangeProfilerObject;
+    CUPTI_API_CALL(cuptiRangeProfilerDecodeData(&decodeDataParams));
+    return CUPTI_SUCCESS;
+}
+```
 
 ```cpp
 // Your struct to store metrics data of a range.
@@ -241,7 +312,7 @@ struct ProfilerRange
 // metricNum: number of metrics requested.
 // counterDataImage: the buffer passed to CUPTI in cuptiRangeProfilerSetConfig.
 // Return all the metrics of a range.
-ProfilerRange CuptiProfilerHost::EvaluateCounterData(
+ProfilerRange EvaluateCounterData(
     size_t rangeIndex,
     size_t metricNum,
     std::vector<uint8_t> &counterDataImage)
