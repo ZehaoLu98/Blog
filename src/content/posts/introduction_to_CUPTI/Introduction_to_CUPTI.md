@@ -4,7 +4,7 @@ published: 2025-10-31
 description: 'Explain Activity API and Range Profiling API with samples'
 image: ''
 tags: [GPU, Note, CUPTI, Profiling]
-category: 'Computer Architecture'
+category: 'CUPTI Tutorial'
 draft: false 
 lang: 'en'
 ---
@@ -30,12 +30,11 @@ It can also be divided into multiple sets by the way it collects data, including
 * the Profiling API,
 
 :::note
-
-Profiling API will no longer be supported for architectures after Blackwell, and has been deprecated in CUDA 13.0 release. Use Range Profiling API instead, which was introduced in CUDA 12.6 release.
-
+Starting with **CUDA 13.0**, the legacy *Profiling API* is **deprecated** for future architectures (post-Blackwell).  
+Use the **Range Profiling API**, introduced in **CUDA 12.6**, as the long-term replacement.
 :::
 
-In this tutorial, we will focus on Activity, Callback and Range Profiling API and introduce our custom profiler GPU Memory Profiler(GMP) built on top of Activity and Range Profiling API.
+This tutorial focuses on **Activity**, **Callback**, and **Range Profiling** APIs — and how we leveraged them to build our in-house **GPU Memory Profiler (GMP)**.
 
 # Activity API
 Activity API provides a simple and low-overhead option to collect traces of various events in CUDA runtime and driver API. Common use case includes timing the kernel launches and memory transfers. The overhead is low compared with other metrics collection APIs because it only execute extra host-side instruments, whereas other metrics APIs, for example, Range Profiling API, will read the hardware performance monitor units, which involves more memory activities and thus is more time-consuming. Therefore if we don't need any low-level device-related data, Activity API is usually the way to go.
@@ -54,8 +53,10 @@ To avoid unnecessary overheads, it is recommended to enable as less kinds of act
 :::
 
 The most common activities we trace is kernel launches. There are two corresponding enums:
+
 * CUPTI_ACTIVITY_KIND_KERNEL
 * CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL
+  
 Despite of little difference on naming, they cause huge impact on the kernel execution. CUPTI_ACTIVITY_KIND_KERNEL forces serializing the kernel launches, i.e. all kernels will be executed separately. Whereas CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL won't affect the execution of kernels. If the program to trace is single-stream, this difference doesn't matter. However, for multi-stream program, you need to consider the effect caused by the choice of activity types.
 
 ## Activity Record Buffer
@@ -195,7 +196,7 @@ ncu --query-metrics
 
 ## Ranges Definition
 All the metrics are grouped with ranges. There are two ways to define range. 
-* Auto range mode, each kernel is automatically defined as a kernel. 
+* Auto range mode, each kernel is automatically defined as a range. 
 * User range mode, a range is defined by wrapping the code a pair of **cuptiRangeProfilerPushRange**  **cuptiRangeProfilerPopRange**. The ranges can be nested. The metrics will be accumulated among multiple kernels.
 
 ## Replay
