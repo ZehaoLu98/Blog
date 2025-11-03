@@ -358,24 +358,17 @@ ProfilerRange EvaluateCounterData(
     return profilerRange;
 }
 ```
-# Next
-If you are interested at a bigger profiler project, you can refer to my other posts:
+# What's Next
+If you are interested how to build a complete GPU profiler, here are the customized in-house GPU Memory Profilers(GMP) I developed: 
 
-*[GMP_v2](): under construction
-*[GMP_v1](): completed
+* [GMP_v2](/posts/build_a_gpu_profiler_from_scratch_gmp_v2/build_a_gpu_profiler_from_scratch_gmp_v2/): under construction
+* [GMP_v1](/posts/build_a_gpu_profiler_from_scratch_gmp_v1/build_a_gpu_profiler_from_scratch_gmp_v1/): completed
 
-It's an evolving project. The versions are implemented with fundamental structural difference, therefore I will preserve the tutorials of these versions to provide different design choices.
+It's an evolving project. The versions are implemented with fundamental structural difference, I will, therefore,  preserve the tutorials of these versions to provide different design choices.
 
+# Resources
+Here is some useful links to dive deep into CUPTI:
 
-
-# Design a custom GPU Profiler
-## Structure
-UML 
-## How it is working
-How we manage the activity record
-How we match the activity records with metrics from range profiling
-Utilized backend from the examples in the SDK
-## Python Wrapper
-Dependency Graph
-Pybind
-
+* [NVIDIA CUPTI Document](https://docs.nvidia.com/cupti/main/main.html#usage)
+* [An Unofficial CUPTI Tutorial](https://github.com/eunomia-bpf/cupti-tutorial/tree/master)
+* [Nsight Compute Document](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
