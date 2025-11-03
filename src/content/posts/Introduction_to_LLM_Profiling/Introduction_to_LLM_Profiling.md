@@ -1,13 +1,16 @@
 ---
-title: Introduction to LLM_Profiling
+title: Introduction to LLM Profiling
 published: 2025-09-18
 description: ''
 image: ''
-tags: ['LLM', 'CUPTI', 'GPU']
+tags: ['LLM', 'CUPTI', 'GPU', Profiling]
 category: ''
-draft: false 
+draft: true 
 lang: 'en'
 ---
+:::note
+WIP, it will be a cross post
+:::
 
 # CUPTI Introduction
 CUPTI is a profiling and tracing api that exposes the hardware counters of NVIDIA GPUs, collects CUDA runtime information and enables developers to build custom profilers. If you used Nsight Compute or Nsight System before, you won't be unfamiliar with it, because they are built on top of CUPTI, which means you can built whatever Nsight Compute or Nsight System implemented, plus extra features you would like to have.
