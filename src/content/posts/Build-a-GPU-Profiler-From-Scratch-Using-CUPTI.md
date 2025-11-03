@@ -1,9 +1,9 @@
 ---
 title: Introduction to CUPTI
 published: 2025-10-31
-description: 'How '
+description: 'Explain Activity API and Range Profiling API with samples'
 image: ''
-tags: [GPU, Note]
+tags: [GPU, Note, CUPTI, Profiling]
 category: 'Computer Architecture'
 draft: false 
 lang: 'en'
