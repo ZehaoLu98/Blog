@@ -1,2 +1,2 @@
 # About
-I am Zehao Lu, a recent graduate from University of British Columbia. My focus is mainly on Computer Architecture and Game Engine. Currently I am working in a semiconductor startup, conducting research related to HPC and GPU profiling.
+I am Zehao Lu, a recent graduate from University of British Columbia. My focus is mainly on Computer Architecture and Game Engine. Currently I am working in a semiconductor startup, conducting research related to HPC and LLM training performance.
