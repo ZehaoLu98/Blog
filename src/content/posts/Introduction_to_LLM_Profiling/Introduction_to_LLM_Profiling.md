@@ -1,5 +1,5 @@
 ---
-title: Introduction_to_LLM_Profiling
+title: Introduction to LLM_Profiling
 published: 2025-09-18
 description: ''
 image: ''
