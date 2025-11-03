@@ -197,11 +197,13 @@ There are huge amounts of metrics. You can query the full list of available metr
 ncu --query-metrics
 ```
 
-## Ranges Definition
+## Range Definition and Range Mode
 Each range represents a code region for which CUPTI accumulates metrics. There are two ways to define ranges:
 
 * Auto range mode, each kernel is automatically treated as a range. This mode includes a context synchronization at the end of each kernel launch, therefore only one kernel can be executed at the same time.
 * User range mode, a range is defined by wrapping the code a pair of **cuptiRangeProfilerPushRange**  **cuptiRangeProfilerPopRange**. Ranges can be nested, and metrics are accumulated across multiple kernel launches within the same range.
+
+Here is the push and pop sample implementation. For range mode setting, refer to the replay section. They are setup together.
 
 ```cpp
 // rangeProfilerObject: Profiler pointer returned by cuptiRangeProfilerEnable during initialization
@@ -240,11 +242,7 @@ According to my experiments, User range + kernel replay always fail with:
 Function cuptiRangeProfilerSetConfig(&setConfigParams) failed with error(7): CUPTI_ERROR_INVALID_OPERATION
 :::
 
-All the range and replay mode options can be sent to CUPTI through **cuptiRangeProfilerSetConfig** during initialization. Refer to the code block below for the sample implementation.
-
-## Counter Buffer 
-All the data is stored within a counter buffer provided during setup using **cuptiRangeProfilerSetConfig**.
-
+All the range and replay mode options can be sent to CUPTI through **cuptiRangeProfilerSetConfig** during initialization. 
 ```cpp
 // range: CUPTI_UserRange or CUPTI_AutoRange
 // replayMode: CUPTI_UserReplay or CUPTI_KernelReplay
@@ -278,6 +276,8 @@ CUptiResult SetConfig(
     return CUPTI_SUCCESS;
 }
 ```
+## Counter Buffer 
+All the data is stored within a counter buffer provided during setup using **cuptiRangeProfilerSetConfig**. Refer to the **SetConfig** function above.
 
 :::note
 According to my experiments, the max range of the counter buffer is around 2000~3000. Exceeding this number will cause error

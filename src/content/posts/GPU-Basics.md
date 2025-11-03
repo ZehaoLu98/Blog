@@ -5,9 +5,12 @@ description: ''
 image: ''
 tags: [GPU, Note]
 category: 'Computer Architecture'
-draft: true 
+draft: false 
 lang: 'en'
 ---
+:::note
+This post is still WIP. There will be unscheduled updates... 
+:::
 
 # Introduction
 Artificial intelligence is now a part of everyday life, powering everything from search engines to chatbots. But behind the scenes, it takes enormous compute power to train and run large language models (LLMs). This is where GPUs step into the spotlight. Their architecture is uniquely designed to handle the scale of parallelism that modern AI demands. In this post, I’ll introduce some of the core ideas of CUDA programming, Nvidia GPU architecture, and highlight how Nvidia software and hardware work together.
