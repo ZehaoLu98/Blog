@@ -5,7 +5,7 @@ description: 'A tutorial to build an auto-range kernel-replay GPU Profiler'
 image: ''
 tags: ['LLM', 'CUPTI', 'GPU', Profiling]
 category: 'Profiling Tutorials'
-draft: true 
+draft: false 
 lang: 'en'
 ---
 

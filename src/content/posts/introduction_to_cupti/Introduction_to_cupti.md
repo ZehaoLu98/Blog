@@ -211,8 +211,8 @@ ncu --query-metrics
 ## Range Definition and Range Mode
 Each range represents a code region for which CUPTI accumulates metrics. There are two ways to define ranges:
 
-* Auto range mode, each kernel is automatically treated as a range. This mode includes a context synchronization at the end of each kernel launch, therefore only one kernel can be executed at the same time.
-* User range mode, a range is defined by wrapping the code a pair of **cuptiRangeProfilerPushRange**  **cuptiRangeProfilerPopRange**. Ranges can be nested, and metrics are accumulated across multiple kernel launches within the same range.
+* Auto range mode, each kernel is automatically treated as a range. This mode includes a context synchronization at the end of each kernel launch, therefore only one kernel can be executed at the same time. Despite the official document implies not to use **cuptiRangeProfilerPushRange** and **cuptiRangeProfilerPopRange**, I verified that only by wrapping the region with **cuptiRangeProfilerPushRange** and **cuptiRangeProfilerPopRange** can you collect the metrics in this mode. Refer to my [experiment post](/posts/cupti_cant_collect_metrics_with_auto_range/) for detail.
+* User range mode, a range is defined by wrapping the code with a pair of **cuptiRangeProfilerPushRange**  **cuptiRangeProfilerPopRange**. Ranges can be nested, and metrics are accumulated across multiple kernel launches within the same range.
 
 Here is the push and pop sample implementation. For range mode setting, refer to the replay section. They are setup together.
 
