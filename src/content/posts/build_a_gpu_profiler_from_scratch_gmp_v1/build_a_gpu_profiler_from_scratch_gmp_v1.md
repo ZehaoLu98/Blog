@@ -9,3 +9,9 @@ draft: false
 lang: 'en'
 ---
 
+# Prerequisite
+
+[Introduction to CUPTI](/posts/introduction_to_cupti/introduction_to_cupti)
+
+# Introduction
+

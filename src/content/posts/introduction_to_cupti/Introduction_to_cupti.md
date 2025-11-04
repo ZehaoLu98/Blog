@@ -55,10 +55,10 @@ There are quite a lot of choices for the *kind* argument listed in the official 
 * Markers and Correlations — NVTX markers and external correlation to align GPU traces with host or other systems.
 * Interconnect and I/O — NVLink and PCIe transfer activities across devices or between CPU and GPU.
 * JIT and Overhead Information — JIT compilation, CUPTI’s own overhead, and preemption events.
-:::note
+:::warning
 Metric-related types will be disabled starting from CUDA 13.0.
 :::
-:::note
+:::tip
 To avoid unnecessary overheads, it is recommended to enable as less kinds of activities as possible since the overhead is proportional to the number of kernels.
 :::
 
@@ -80,7 +80,7 @@ typedef void (*CUpti_BuffersCallbackRequestFunc)(uint8_t **buffer, size_t *size,
 typedef void (*CUpti_BuffersCallbackCompleteFunc)(CUcontext context, uint32_t streamId, uint8_t *buffer, size_t size, size_t validSize);
 ```
 
-:::note
+:::warning
 Avoid putting time-consuming operations in these callbacks.
 :::
 
@@ -247,8 +247,8 @@ There are three types of replay.
 * User replay lets user define how to replay through checkpoint API, which enables user to manually save and restore the memory status. It provides the most freedom, but with the cost of simplicity. 
 * Application replay re-executes the whole application with the same configuration. The execution path should be deterministic.
 
-:::note
-According to my experiments, User range + kernel replay always fail with: 
+:::important
+According to my experiments, user range + kernel replay always fail with: 
 
 Function cuptiRangeProfilerSetConfig(&setConfigParams) failed with error(7): CUPTI_ERROR_INVALID_OPERATION
 :::
@@ -290,7 +290,7 @@ CUptiResult SetConfig(
 ## Counter Buffer 
 All the data is stored within a counter buffer provided during setup using **cuptiRangeProfilerSetConfig**. Refer to the **SetConfig** function above.
 
-:::note
+:::important
 According to my experiments, the max range of the counter buffer is around 2000~3000. Exceeding this number will cause error
 
 Function cuptiRangeProfilerSetConfig(&setConfigParams) failed with error(7): CUPTI_ERROR_INVALID_OPERATION.
