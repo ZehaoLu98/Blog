@@ -14,7 +14,7 @@ lang: 'en'
 [Introduction to CUPTI](/posts/introduction_to_cupti/introduction_to_cupti)
 
 # Introduction
-GMP_V1 is a light-weight GPU profiler built on top of CUPTI, which provided the data of another blog here. We used the CUPTI Activity and Range Profiling API, correlating the outputs of the two APIs so that the metrics associated with a specific range can be collected.
+GMP_V1 is a light-weight GPU profiler built on top of CUPTI, which provided the data of this [LLM introduction blog](https://ml-memory-profiling-group.github.io/blog_v2/note/intro-to-llm/). We used the CUPTI Activity and Range Profiling API, correlating the outputs of the two APIs so that the metrics associated with a specific range can be collected.
 
 This profiler leverages auto range and kernel replay because we faced issues with user range and user replay, which are actually the best options for our need. Since these problems are resolved now, we have provided GMP_V2, which should be a more performant and simpler profiler that can substitute the current GMP_V1. Therefore we will only provide some brief introduction to this profiler as an example implementation to those who wish to quickly implement a GPU profiler or are curious what techniques we used to collect data for the llm blog. 
 
