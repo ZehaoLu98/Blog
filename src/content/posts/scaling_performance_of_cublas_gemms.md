@@ -9,7 +9,7 @@ draft: false
 # introduction
 GEMM is always one of the hot topic in HPC, bluh bluh
 
-We use SGEMM throughout all the anaylysis.
+We use SGEMM throughout all the analysis.
 
 We will test 4 types of cublas GEMM. To compare apples to apples, we ensure that every CUBLASS GEMM performs the same amount of FLOPs.
 ## Single Big GEMM
@@ -21,7 +21,7 @@ This is simply calling *cublasSgemm* with wider matrix compared to other methods
 
 Therefore the single big GEMM is considered as a upper bound on Performance among all the methods.
 
-# Naive GEMM
+## Naive GEMM
 Given many small matrix multiplications, we have two ways of distributing the work to GPU: either launching one kernel for each matrix multiplications or fused the kernels into one or several mega-kernels. The so called Naive GEMM refers to the first approach, by continuously launching per-multiplication small kernels in a for-loop. Here is a piece of sample code: 
 
 ```cpp
