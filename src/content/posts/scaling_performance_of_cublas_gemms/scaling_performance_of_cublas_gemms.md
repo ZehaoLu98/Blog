@@ -149,7 +149,7 @@ For each $N$, we increase $k$ from 2 until running out of GPU memory, observing 
 
 ![wallclock_time](wallclock_time_comparison.png)
 
-The overall wallclock time is shown in the above plot, with y axis presented at logarithmic scale. It clearly reveals that among different N,   
+The overall wallclock time is shown in the above plot, with y axis presented at logarithmic scale. It clearly reveals that among different N, Naive GEMM perform far worse than other three methods, and the performance gap scales with the k. 
 
 ## Pratical Workloads
 
