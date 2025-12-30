@@ -127,7 +127,7 @@ CHECK_CUBLAS(cublasSgemmStridedBatched(handle,
                                         batch_size));
 ```
 
-## k batches of $(N x N) \times (N x N)$
+## $k$ batches of $(N \times N) \times (N \times N)$
 To establish baseline behavior, we begin with square matrix multiplications, the simplest and most symmetric case. In batched methods, we perform k independent multiplications of $(N \times N) \times (N \times N)$. To ensure fair comparison across all four methods, we configure each to perform identical total FLOPs:
 
 | Method | Configuration | Total FLOPs |
@@ -143,13 +143,13 @@ The A100's 40 MB L2 cache plays a critical role in GEMM performance. When workin
 |-----|---------------------------------------------|---------------------|-------------------|
 | 1024 | 12 MB | ~0.3× | Fits comfortably; high L2 hit rate |
 | 2560 | 75 MB | ~1.9× | Exceeds L2; partial eviction |
-| 4096 | 192 MB | ~4.8× | Far exceeds L2; streaming from HBM |
+| 4096 | 192 MB | ~4.8× | Far exceeds L2; streaming from memory |
 
 For each $N$, we increase $k$ from 2 until running out of GPU memory, observing how each method scales.
 
 ![wallclock_time](wallclock_time_comparison.png)
 
-
+The overall wallclock time is shown in the above plot, with y axis presented at logarithmic scale. It clearly reveals that among different N,   
 
 ## Pratical Workloads
 
