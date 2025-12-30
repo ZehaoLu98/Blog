@@ -127,7 +127,7 @@ CHECK_CUBLAS(cublasSgemmStridedBatched(handle,
 # Performance Analysis
 
 ## k batches of (N x N) matmul (N x N)
-
+![wallclock_time](wallclock_time_comparison.png)
 ## Pratical Workloads
 
 
