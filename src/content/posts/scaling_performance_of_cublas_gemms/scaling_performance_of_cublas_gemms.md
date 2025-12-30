@@ -15,11 +15,13 @@ Under Construction!
 Attention layer is among the most time-consuming part of any LLM. It consists of multiple matrix multiplications that are theoretically bottlenecked by tensor core throughput according to the roofline model from this post[link]. However, our result reveals that the memory throughput instead is dragging down the performance of the attention layer. This discrepancy between theory and reality leads to this post. 
 
 GEMM(i.e. General Matrix Multiplication) is always one of the hottest topic in HPC. The transformer architecture made this even more stark: every attention layer, every feed-forward block, every projection is fundamentally a GEMM, therefore even small amount of improvement on GEMM can cause huge impact on overall system performance. With the increasing problem size, the performance usually starts to be limited by either the memory throughput or compute resources. Through this post, I will introduce the GEMM performance of various matrix size, shape and batch size, revealing the bottleneck in different conditions. The attention layer GEMM performance of the popular open-source model, llama3, will also be provided for practical analysis.   
-
-I will test 4 ways of computing GEMM using cuBLAS. To compare apples to apples, it is ensured that every cuBLAS GEMM performs the same amount of FLOPs with FP32.
+# Performance Analysis
+## Setup
+We will profile 4 ways of computing GEMM using cuBLAS. To compare apples to apples, it is ensured that every cuBLAS GEMM performs the same amount of FLOPs with FP32 and running on the same device, which is an A100 (40GB, SXM4).
 
 ## Single Big GEMM
 This is simply calling *cublasSgemm* with wider matrix compared to other methods. This is expected to perform at least no worse than other metrics because:
+
 * More oppotunities to reuse the memory.
 * More algorithms available for larger matrices.
 * Less padding needed for tiling compared to smaller GEMMs.
@@ -124,10 +126,20 @@ CHECK_CUBLAS(cublasSgemmStridedBatched(handle,
                                         d_C, m, stride_C,
                                         batch_size));
 ```
-# Performance Analysis
 
 ## k batches of (N x N) matmul (N x N)
+To start simple, we first test squared matrix multiplications. In batched methods, k batches of $N \times N$ matrices are multiplied. For other methods, we use different configurations to match the total FLOPs. For the Single Big GEMM (which has no batching), we perform an $(N \times N) \times (N \times kN)$ multiplication to match the FLOPs of other methods. For the Naive GEMM, the k batches naturally map to k sequential iterations.
+
+Three N are chosen to simulate three different cases related to L2:
+
+* 1024, where 1 batch of accumulated sizes of A, B and C($3N^2$) are less than 1/4 of L2 size(40MB)
+* 2560, where 1 batch of accumulated sizes of A, B and C($3N^2$) are ~2x of L2 size(40MB)
+* 4096, where 1 batch of accumulated sizes of A, B and C($3N^2$) are ~4x of L2 size(40MB)
+
+Given the N, we increase the k from 2 until running out of GPU memory.
+
 ![wallclock_time](wallclock_time_comparison.png)
+
 ## Pratical Workloads
 
 
