@@ -127,18 +127,29 @@ CHECK_CUBLAS(cublasSgemmStridedBatched(handle,
                                         batch_size));
 ```
 
-## k batches of (N x N) matmul (N x N)
-To start simple, we first test squared matrix multiplications. In batched methods, k batches of $N \times N$ matrices are multiplied. For other methods, we use different configurations to match the total FLOPs. For the Single Big GEMM (which has no batching), we perform an $(N \times N) \times (N \times kN)$ multiplication to match the FLOPs of other methods. For the Naive GEMM, the k batches naturally map to k sequential iterations.
+## k batches of $(N x N) \times (N x N)$
+To establish baseline behavior, we begin with square matrix multiplications, the simplest and most symmetric case. In batched methods, we perform k independent multiplications of $(N \times N) \times (N \times N)$. To ensure fair comparison across all four methods, we configure each to perform identical total FLOPs:
 
-Three N are chosen to simulate three different cases related to L2:
+| Method | Configuration | Total FLOPs |
+|--------|---------------|-------------|
+| Single Big GEMM | $(N \times N) \times (N \times kN)$ | $2kN^3$ |
+| Naive GEMM | $k$ iterations of $(N \times N) \times (N \times N)$ | $2kN^3$ |
+| Batched GEMM | $k$ batched $(N \times N) \times (N \times N)$ | $2kN^3$ |
+| Strided Batched GEMM | $k$ batched $(N \times N) \times (N \times N)$ | $2kN^3$ |
 
-* 1024, where 1 batch of accumulated sizes of A, B and C($3N^2$) are less than 1/4 of L2 size(40MB)
-* 2560, where 1 batch of accumulated sizes of A, B and C($3N^2$) are ~2x of L2 size(40MB)
-* 4096, where 1 batch of accumulated sizes of A, B and C($3N^2$) are ~4x of L2 size(40MB)
+The A100's 40 MB L2 cache plays a critical role in GEMM performance. When working sets fit in L2, data can be reused across thread blocks without expensive memory accesses. We select three values of $N$ to testify different cache behaviours:
 
-Given the N, we increase the k from 2 until running out of GPU memory.
+| $N$ | Per-Batch Size($A+B+C$) | Ratio to L2 (40 MB) | Expected Behavior |
+|-----|---------------------------------------------|---------------------|-------------------|
+| 1024 | 12 MB | ~0.3× | Fits comfortably; high L2 hit rate |
+| 2560 | 75 MB | ~1.9× | Exceeds L2; partial eviction |
+| 4096 | 192 MB | ~4.8× | Far exceeds L2; streaming from HBM |
+
+For each $N$, we increase $k$ from 2 until running out of GPU memory, observing how each method scales.
 
 ![wallclock_time](wallclock_time_comparison.png)
+
+
 
 ## Pratical Workloads
 
