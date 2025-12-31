@@ -128,7 +128,7 @@ CHECK_CUBLAS(cublasSgemmStridedBatched(handle,
 ```
 
 ## $k$ batches of $(N \times N) \times (N \times N)$
-To establish baseline behavior, we begin with square matrix multiplications, the simplest and most symmetric case. In batched methods, we perform k independent multiplications of $(N \times N) \times (N \times N)$. To ensure fair comparison across all four methods, we configure each to perform identical total FLOPs:
+We begin with square matrix multiplications, the simplest and most symmetric case. In batched methods, we perform k independent multiplications of $(N \times N) \times (N \times N)$. To ensure fair comparison across all four methods, we configure each to perform identical total FLOPs:
 
 | Method | Configuration | Total FLOPs |
 |--------|---------------|-------------|
@@ -149,8 +149,15 @@ For each $N$, we increase $k$ from 2 until running out of GPU memory, observing 
 
 ![wallclock_time](wallclock_time_comparison.png)
 
-The overall wallclock time is shown in the above plot, with y axis presented at logarithmic scale. It clearly reveals that among different N, Naive GEMM perform far worse than other three methods, and the performance gap scales with the k. 
+The overall wallclock time is shown in the above plot, with y axis presented at logarithmic scale. It clearly reveals that among different N, Naive GEMM always perform far worse than other three methods, and the performance gap scales with the k respectively. This matches our expectation because Naive GEMM launches $k$ kernels in the loops and therefore kernel overhead accumulates and finally dominates the wallclock time as $k$ increases.
 
-## Pratical Workloads
+![wall_clock_time_without_naive](wallclock_time_ratio.jpg)
+
+We further compare the other three techniques by calculating the time ratio with Single Big GEMM as baseline, which spends least wallclock time among all the techniques. Overall, Strided GEMM performs better than Batched GEMM, with average wallclock time increase of 5% and 32% over Single Batched GEMM respectively. However, the most interesting part is that the performance edge of Strided GEMM and Single Big GEMM quickly shrink as $N$ increases. This phenomenon becomes most pronounced with larger $k$. For example, when $k=2$, Batched GEMM only droped $4%$ from $37%$ to $33%$, and Strided Batched GEMM barely moves when $N$ increases. Whereas when $k=64$, Batched GEMM drops significantly from $35%$ to $22%$, and the time spent by Strided Batched GEMM sharply increases from $1%$ to $16%$. 
+
+:::tip
+Should we discuss the reason here?
+:::
+## Pratical Workload
 
 
