@@ -12,17 +12,17 @@ Under Construction!
 :::
 
 # Introduction
-Attention layer is among the most time-consuming part of any LLM. It consists of multiple matrix multiplications that are theoretically bottlenecked by tensor core throughput according to the roofline model from this post[link]. However, our result reveals that the memory throughput instead is dragging down the performance of the attention layer. This discrepancy between theory and reality leads to this post. 
+Attention layer is among the most time-consuming part of any LLM. It consists of multiple matrix multiplications that are theoretically bottlenecked by tensor core throughput according to the roofline model from this post[link]. However, our result reveals that the memory throughput instead is constraining the performance of the attention layer. This discrepancy between theory and reality leads to this post. 
 
 GEMM(i.e. General Matrix Multiplication) is always one of the hottest topic in HPC. The transformer architecture made this even more stark: every attention layer, every feed-forward block, every projection is fundamentally a GEMM, therefore even small amount of improvement on GEMM can cause huge impact on overall system performance. With the increasing problem size, the performance usually starts to be limited by either the memory throughput or compute resources. Through this post, I will introduce the GEMM performance of various matrix size, shape and batch size, revealing the bottleneck in different conditions. The attention layer GEMM performance of the popular open-source model, llama3, will also be provided for practical analysis.   
 # Performance Analysis
 ## Setup
-We will profile 4 ways of computing GEMM using cuBLAS. To compare apples to apples, it is ensured that every cuBLAS GEMM performs the same amount of FLOPs with FP32 and running on the same device, which is an A100 (40GB, SXM4).
+We will profile 4 ways of computing GEMM using cuBLAS. To compare apples to apples, it is ensured that every cuBLAS GEMM perform the same amount of FLOPs with FP32 and running on the same device, which is an A100 (40GB, SXM4).
 
 ## Single Big GEMM
 This is simply calling *cublasSgemm* with wider matrix compared to other methods. This is expected to perform at least no worse than other metrics because:
 
-* More oppotunities to reuse the memory.
+* More opportunities to reuse the memory.
 * More algorithms available for larger matrices.
 * Less padding needed for tiling compared to smaller GEMMs.
 * Less kernels invoked.
@@ -30,7 +30,7 @@ This is simply calling *cublasSgemm* with wider matrix compared to other methods
 Therefore the single big GEMM is considered as a upper bound on Performance among all the methods.
 
 ## Naive GEMM
-Given many small matrix multiplications, we have two ways of distributing the work to GPU: either launching one kernel for each matrix multiplications or fused the kernels into one or several mega-kernels. The so called Naive GEMM refers to the first approach, by continuously launching per-multiplication small kernels in a for-loop. Here is a piece of sample code: 
+Given many small matrix multiplications, we have two ways of distributing the work to GPU: either launching one kernel for each matrix multiplications or fusing the kernels into one or several mega-kernels. The so called Naive GEMM refers to the first approach, by continuously launching per-multiplication small kernels in a for-loop. Here is a piece of sample code: 
 
 ```cpp
 for (int i = 0; i < batch_size; i++) {
@@ -137,7 +137,7 @@ We begin with square matrix multiplications, the simplest and most symmetric cas
 | Batched GEMM | $k$ batched $(N \times N) \times (N \times N)$ | $2kN^3$ |
 | Strided Batched GEMM | $k$ batched $(N \times N) \times (N \times N)$ | $2kN^3$ |
 
-The A100's 40 MB L2 cache plays a critical role in GEMM performance. When working sets fit in L2, data can be reused across thread blocks without expensive memory accesses. We select three values of $N$ to testify different cache behaviours:
+The A100's 40 MB L2 cache plays a critical role in GEMM performance. When working sets fit in L2, data can be reused across thread blocks without expensive memory accesses. We select three values of $N$ to test different cache behaviours:
 
 | $N$ | Per-Batch Size($A+B+C$) | Ratio to L2 (40 MB) | Expected Behavior |
 |-----|---------------------------------------------|---------------------|-------------------|
@@ -153,11 +153,11 @@ The overall wallclock time is shown in the above plot, with y axis presented at 
 
 ![wall_clock_time_without_naive](wallclock_time_ratio.jpg)
 
-We further compare the other three techniques by calculating the time ratio with Single Big GEMM as baseline, which spends least wallclock time among all the techniques. Overall, Strided GEMM performs better than Batched GEMM, with average wallclock time increase of $5\%$ and $32\%$ over Single Batched GEMM respectively. However, the most interesting part is that the performance edge of Strided GEMM and Single Big GEMM quickly shrink as $N$ increases. This phenomenon becomes most pronounced with larger $k$. For example, when $k=2$, Batched GEMM only droped $4\%$ from $37\%$ to $33\%$, and Strided Batched GEMM barely moves when $N$ increases. Whereas when $k=64$, Batched GEMM drops significantly from $35\%$ to $22\%$, and the time spent by Strided Batched GEMM sharply increases from $1\%$ to $16\%$. 
+We further compare the other three techniques by calculating the time ratio with Single Big GEMM as baseline, which spends least wallclock time among all the techniques. Overall, Strided GEMM performs better than Batched GEMM, with average wallclock time increase of $5\%$ and $32\%$ over Single Batched GEMM respectively. However, the most interesting part is that the performance edge of Strided GEMM and Single Big GEMM quickly shrink as $N$ increases. This phenomenon becomes most pronounced with larger $k$. For example, when $k=2$, Batched GEMM only dropped $4\%$ from $37\%$ to $33\%$, and Strided Batched GEMM barely moves when $N$ increases. Whereas when $k=64$, Batched GEMM drops significantly from $35\%$ to $22\%$, and the time spent by Strided Batched GEMM sharply increases from $1\%$ to $16\%$. 
 
 :::tip
 Should we discuss the reason here?
 :::
-## Pratical Workload
+## Practical Workload - llama 3.1
 
 
