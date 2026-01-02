@@ -161,9 +161,17 @@ Next we will take a more nuanced look at the GPU execution time. Since GPU execu
 
 ![inst_issued_ratio](inst_issued_ratio.jpg)
 
-Here we provide the ratio of total SASS instructions issued by the SMSP. It reveals a similar pattern to the GPU time: when $N=1024$, Naive GEMM issues more SASS instructions, whereas when $N=2560$ and $N=4096$, Naive GEMM issues less. This indicates that cuBLAS likely selects different algorithms or memory strategies for different values of $N$ heuristically, with a transition point occurring between $N=1024$ and $N=2560$.
+Here we provide the ratio of total SASS instructions issued by the SMSP. It reveals a similar pattern to the GPU time: when $N=1024$, Naive GEMM issues more SASS instructions, whereas when $N=2560$ and $N=4096$, Naive GEMM issues less. This indicates that cuBLAS likely selects different algorithms or memory strategies for different values of $N$ heuristically, with a transition point occurring between $N=1024$ and $N=2560$. From $N=2560$ to $N=4096$, the instruction ratio of Batched GEMM and Strided Batched GEMM both reaches ~0.9, implying that they are using the same algorithm under the hood when L2 can't store any of the matrix. 
 
 ## Practical Workload - llama 3.1
+To make the analysis more practical, we further test the scaling performance of GEMM in the attention block(i.e. $QK^T$) of llama3.1-8B, llama3.1-70B and llama3.1-405B. The dimensions of the matrices and the NumHeads(Batches) are given below:
+
+| Model | NumHeads (H) | Hidden Dimension (C) | Per Head Q | Per Head K |
+|-------|--------------:|---------------------:|------------|------------|
+| Llama3.1-8B   | 32  | 4096  | [T x 128] | [T x 128] |
+| Llama3.1-70B  | 64  | 8192  | [T x 128] | [T x 128] |
+| Llama3.1-405B | 128 | 16384 | [T x 128] | [T x 128] |
+
 
 
 
