@@ -153,11 +153,50 @@ The overall wallclock time is shown in the above plot, with y axis presented at 
 
 ![wall_clock_time_without_naive](wallclock_time_ratio.jpg)
 
-We further compare the other three techniques by calculating the time ratio with Single Big GEMM as baseline, which spends least wallclock time among all the techniques. Overall, Strided GEMM performs better than Batched GEMM, with average wallclock time increase of $5\%$ and $32\%$ over Single Batched GEMM respectively. However, the most interesting part is that the performance edge of Strided GEMM and Single Big GEMM quickly shrink as $N$ increases. This phenomenon becomes most pronounced with larger $k$. For example, when $k=2$, Batched GEMM only dropped $4\%$ from $37\%$ to $33\%$, and Strided Batched GEMM barely moves when $N$ increases. Whereas when $k=64$, Batched GEMM drops significantly from $35\%$ to $22\%$, and the time spent by Strided Batched GEMM sharply increases from $1\%$ to $16\%$. 
+We further compare the other three techniques by calculating the time ratio with Single Big GEMM as the baseline, which achieves the lowest wallclock time among all techniques. Overall, Strided GEMM performs better than Batched GEMM, with average wallclock time increases of $5\%$ and $32\%$ over Single Big GEMM respectively. However, the most notable observation is that the performance advantage of Strided GEMM and Single Big GEMM diminishes as $N$ increases. This phenomenon becomes most pronounced with larger $k$. For example, when $k=2$, the overhead of Batched GEMM only decreases by $4\%$ (from $37\%$ to $33\%$), and Strided Batched GEMM remains nearly constant as $N$ increases. In contrast, when $k=64$, Batched GEMM overhead drops significantly from $35\%$ to $22\%$, while the overhead of Strided Batched GEMM increases sharply from $1\%$ to $16\%$. 
 
-:::tip
-Should we discuss the reason here?
-:::
+![GPU_time_ratio](GPU_time_ratio.jpg)
+
+Next we will take a more nuanced look at the GPU execution time. Since GPU execution time excludes kernel launch overhead, the accumulated GPU time of Naive GEMM becomes comparable to the other three methods. The plot above displays the GPU time ratio between Naive GEMM and the two batched techniques. A higher ratio indicates worse Naive GEMM performance relative to the respective methods. This plot reveals two distinct trends: with smaller $N=1024$, both Batched GEMM and Strided Batched GEMM perform approximately 1.5×–2.5× better than Naive GEMM. However, with larger $N=2560$ and $N=4096$, Naive GEMM consistently outperforms the other two methods.
+
+![inst_issued_ratio](inst_issued_ratio.jpg)
+
+Here we provide the ratio of total SASS instructions issued by the SMSP. It reveals a similar pattern to the GPU time: when $N=1024$, Naive GEMM issues more SASS instructions, whereas when $N=2560$ and $N=4096$, Naive GEMM issues fewer instructions. This indicates that cuBLAS likely selects different algorithms, tiling sizes, or memory strategies for different values of $N$ heuristically, with a transition point occurring between $N=1024$ and $N=2560$.
+
 ## Practical Workload - llama 3.1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
