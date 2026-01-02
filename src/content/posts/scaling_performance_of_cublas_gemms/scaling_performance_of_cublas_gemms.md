@@ -164,13 +164,43 @@ Next we will take a more nuanced look at the GPU execution time. Since GPU execu
 Here we provide the ratio of total SASS instructions issued by the SMSP. It reveals a similar pattern to the GPU time: when $N=1024$, Naive GEMM issues more SASS instructions, whereas when $N=2560$ and $N=4096$, Naive GEMM issues less. This indicates that cuBLAS likely selects different algorithms or memory strategies for different values of $N$ heuristically, with a transition point occurring between $N=1024$ and $N=2560$. From $N=2560$ to $N=4096$, the instruction ratio of Batched GEMM and Strided Batched GEMM both reaches ~0.9, implying that they are using the same algorithm under the hood when L2 can't store any of the matrix. 
 
 ## Practical Workload - llama 3.1
-To make the analysis more practical, we further test the scaling performance of GEMM in the attention block(i.e. $QK^T$) of llama3.1-8B, llama3.1-70B and llama3.1-405B. The dimensions of the matrices and the NumHeads(Batches) are given below:
+To contextualize our analysis within realistic scenarios, we evaluate GEMM scaling performance across the attention mechanism ($QK^T$) of llama3.1-8B, llama3.1-70B, and llama3.1-405B variants.
+
+### Arithmetic Intensity Analysis
+Arithmetic Intensity (AI) quantifies the computational density—the ratio of floating-point operations to memory traffic. High AI signifies compute-bound kernels where computation dominates, whereas low AI indicates memory-bound kernels where data movement constrains performance. This metric is instrumental in characterizing kernel behavior. We calculate AI for both training and inference phases.
+
+The matrix dimensions and attention head configuration are enumerated below:
 
 | Model | NumHeads (H) | Hidden Dimension (C) | Per Head Q | Per Head K |
 |-------|--------------:|---------------------:|------------|------------|
 | Llama3.1-8B   | 32  | 4096  | [T x 128] | [T x 128] |
 | Llama3.1-70B  | 64  | 8192  | [T x 128] | [T x 128] |
 | Llama3.1-405B | 128 | 16384 | [T x 128] | [T x 128] |
+
+Derived from the $Q$ and $K$ dimensions, the Arithmetic Intensity formulations are:
+
+| Phase | Operation | AI Formula |
+|-------|-----------|------------|
+| Training | `[T×128] × [128×T] → [T×T]` | $\frac{128T}{256+T}$ |
+| Inference | `[1×128] × [128×T] → [1×T]` | $\frac{128T}{128+129T}$ |
+
+The computed AI values across varying sequence lengths are tabulated:
+
+| Sequence Length (T) | Training AI (FLOP/Byte) | Inference AI (FLOP/Byte) |
+|--------------------:|---------------:|-----------------:|
+| 1,024 | 102.4 | 0.991 |
+| 2,048 | 113.8 | 0.992 |
+| 4,096 | 120.5 | 0.992 |
+| 8,192 | 124.1 | 0.992 |
+| 16,384 | 126.0 | 0.992 |
+| 32,768 | 127.0 | 0.992 |
+| 65,536 | 127.5 | 0.992 |
+| 131,072 | 127.8 | 0.992 |
+
+The identical computational operation ($QK^T$) exhibits drastically disparate performance characteristics across deployment phases. Inference AI reaches merely ~0.992, representing over 100× lower density than its training counterpart. As sequence length scales, both training and inference AI asymptotically converge toward 128 and 0.992 respectively. These metrics unequivocally demonstrate that inference operates under severe memory bandwidth constraints, with computational resources substantially underutilized.
+
+### Training
+
 
 
 
