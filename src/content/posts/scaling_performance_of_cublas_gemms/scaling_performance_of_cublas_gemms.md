@@ -161,7 +161,7 @@ Next we will take a more nuanced look at the GPU execution time. Since GPU execu
 
 ![inst_issued_ratio](inst_issued_ratio.jpg)
 
-Here we provide the ratio of total SASS instructions issued by the SMSP. It reveals a similar pattern to the GPU time: when $N=1024$, Naive GEMM issues more SASS instructions, whereas when $N=2560$ and $N=4096$, Naive GEMM issues fewer instructions. This indicates that cuBLAS likely selects different algorithms, tiling sizes, or memory strategies for different values of $N$ heuristically, with a transition point occurring between $N=1024$ and $N=2560$.
+Here we provide the ratio of total SASS instructions issued by the SMSP. It reveals a similar pattern to the GPU time: when $N=1024$, Naive GEMM issues more SASS instructions, whereas when $N=2560$ and $N=4096$, Naive GEMM issues less. This indicates that cuBLAS likely selects different algorithms or memory strategies for different values of $N$ heuristically, with a transition point occurring between $N=1024$ and $N=2560$.
 
 ## Practical Workload - llama 3.1
 
