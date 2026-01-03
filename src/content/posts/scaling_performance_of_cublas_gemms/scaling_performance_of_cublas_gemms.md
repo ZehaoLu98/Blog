@@ -167,7 +167,7 @@ Here we provide the ratio of total SASS instructions issued by the SMSP. It reve
 To contextualize our analysis within realistic scenarios, we evaluate GEMM scaling performance across the attention mechanism ($QK^T$) of llama3.1-8B, llama3.1-70B, and llama3.1-405B variants.
 
 ### Arithmetic Intensity Analysis
-Arithmetic Intensity (AI) quantifies the computational density—the ratio of floating-point operations to memory traffic. High AI signifies compute-bound kernels where computation dominates, whereas low AI indicates memory-bound kernels where data movement constrains performance. This metric is instrumental in characterizing kernel behavior. We calculate AI for both training and inference phases.
+Arithmetic Intensity (AI) quantifies the computational density—the ratio of floating-point operations to memory transfer. High AI signifies compute-bound kernels where computation dominates, whereas low AI indicates memory-bound kernels where data movement constrains performance. This metric is instrumental in characterizing kernel behavior, therefore we will provide AI for both training and inference phases before going into full details.
 
 The matrix dimensions and attention head configuration are enumerated below:
 
@@ -184,24 +184,22 @@ Derived from the $Q$ and $K$ dimensions, the Arithmetic Intensity formulations a
 | Training | `[T×128] × [128×T] → [T×T]` | $\frac{128T}{256+T}$ |
 | Inference | `[1×128] × [128×T] → [1×T]` | $\frac{128T}{128+129T}$ |
 
-The computed AI values across varying sequence lengths are tabulated:
+The computed AI values across varying T are tabulated below:
 
 | Sequence Length (T) | Training AI (FLOP/Byte) | Inference AI (FLOP/Byte) |
 |--------------------:|---------------:|-----------------:|
-| 1,024 | 102.4 | 0.991 |
-| 2,048 | 113.8 | 0.992 |
-| 4,096 | 120.5 | 0.992 |
-| 8,192 | 124.1 | 0.992 |
-| 16,384 | 126.0 | 0.992 |
-| 32,768 | 127.0 | 0.992 |
-| 65,536 | 127.5 | 0.992 |
-| 131,072 | 127.8 | 0.992 |
+| 1024 | 102.4 | 0.991 |
+| 2048 | 113.8 | 0.992 |
+| 4096 | 120.5 | 0.992 |
+| 8192 | 124.1 | 0.992 |
+| 16384 | 126.0 | 0.992 |
+| 32768 | 127.0 | 0.992 |
+| 65536 | 127.5 | 0.992 |
+| 131072 | 127.8 | 0.992 |
 
-The identical computational operation ($QK^T$) exhibits drastically disparate performance characteristics across deployment phases. Inference AI reaches merely ~0.992, representing over 100× lower density than its training counterpart. As sequence length scales, both training and inference AI asymptotically converge toward 128 and 0.992 respectively. These metrics unequivocally demonstrate that inference operates under severe memory bandwidth constraints, with computational resources substantially underutilized.
+ It is noteworthy that the AI of Inference reaches merely ~0.992, representing over 100× lower density than its training counterpart. As T scales, both training and inference AI converge toward 128 and 0.992 respectively. These metrics demonstrate that theotically, inference operates under severe memory bandwidth constraints, with computational resources substantially underutilized.
 
 ### Training
-
-
 
 
 
