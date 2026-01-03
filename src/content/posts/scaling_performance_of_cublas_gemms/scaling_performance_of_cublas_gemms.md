@@ -167,7 +167,7 @@ Here we provide the ratio of total SASS instructions issued by the SMSP. It reve
 To contextualize our analysis within realistic scenarios, we evaluate GEMM scaling performance across the attention mechanism ($QK^T$) of llama3.1-8B, llama3.1-70B, and llama3.1-405B variants.
 
 ### Arithmetic Intensity Analysis
-Arithmetic Intensity (AI) quantifies the computational density—the ratio of floating-point operations to memory transfer. High AI signifies compute-bound kernels where computation dominates, whereas low AI indicates memory-bound kernels where data movement constrains performance. This metric is instrumental in characterizing kernel behavior, therefore we will provide AI for both training and inference phases before going into full details.
+Arithmetic Intensity (AI) quantifies the computational density, more specifically, FLOPs per byte. High AI signifies compute-bound kernels where computation dominates, whereas low AI indicates memory-bound kernels where data movement constrains performance. This metric is essential for understanding the kernel behavior, therefore we will provide AI for both training and inference phases before going into full details.
 
 The matrix dimensions and attention head configuration are enumerated below:
 
