@@ -200,8 +200,19 @@ The computed AI values across varying T are tabulated below:
  It is noteworthy that the AI of Inference reaches merely ~0.992, representing over 100× lower density than its training counterpart. As T scales, both training and inference AI converge toward 128 and 0.992 respectively. These metrics demonstrate that theotically, inference operates under severe memory bandwidth constraints, with computational resources substantially underutilized.
 
 ### Training
+We collected the training GPU execution time and normalized the values with $N=1024$ value in the same GEMM type and with same $k$. Since the Batched GEMM and Strided Batched GEMM have similar results, we will only show the Batched GEMM in the plot for simplicity.
 
+![normalized_gpu_exec_time](normalized_gpu_exec_time.jpg)
 
+![llama_training_gpu_time_ratio](llama_training_gpu_time_ratio.jpg)
+
+The GPU execution time scales significantly with $N$, but barely changes among different $k$. The Batched GEMM and Strided Batched GEMM scales much higher than the Naive GEMM, with around $3.3x, 13x and 53x$ of the $N=1024$ value, compared to the Naive GEMM's $2.4x, 6.7x and 22x$ to the corresponding $N=1024$ value. However, it doesn't mean that Naive GEMM is more efficent than Batched GEMM. We further provide the time ratio between Naive GEMM and Batched GEMM. When $N=1024$, the Naive GEMM constantly takes ~2.5x more time compared toi the Batched GEMM with all $k$. As $N$ scales, the gap between the two techniques narrows, and at $N=8192$, both methods produce similar performance.
+
+:::warning
+Wallclock time seems wrong. 
+:::
+
+### Inference
 
 
 
