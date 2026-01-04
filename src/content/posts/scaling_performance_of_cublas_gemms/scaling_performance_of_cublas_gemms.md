@@ -169,13 +169,21 @@ To contextualize our analysis within realistic scenarios, we evaluate GEMM scali
 ### Arithmetic Intensity Analysis
 Arithmetic Intensity (AI) quantifies the computational density, more specifically, FLOPs per byte. High AI signifies compute-bound kernels where computation dominates, whereas low AI indicates memory-bound kernels where data movement constrains performance. This metric is essential for understanding the kernel behavior, therefore we will provide AI for both training and inference phases before going into full details.
 
-The matrix dimensions and attention head configuration are enumerated below:
+The matrix dimensions and attention head configuration are enumerated below for both Training and Inference:
 
+**Training**
 | Model | NumHeads (H) | Hidden Dimension (C) | Per Head Q | Per Head K |
 |-------|--------------:|---------------------:|------------|------------|
 | Llama3.1-8B   | 32  | 4096  | [T x 128] | [T x 128] |
 | Llama3.1-70B  | 64  | 8192  | [T x 128] | [T x 128] |
 | Llama3.1-405B | 128 | 16384 | [T x 128] | [T x 128] |
+
+**Inference**
+| Model | NumHeads (H) | Hidden Dimension (C) | Per Head Q | Per Head K |
+|-------|--------------:|---------------------:|------------|------------|
+| Llama3.1-8B   | 32  | 4096  | [1 x 128] | [T x 128] |
+| Llama3.1-70B  | 64  | 8192  | [1 x 128] | [T x 128] |
+| Llama3.1-405B | 128 | 16384 | [1 x 128] | [T x 128] |
 
 Derived from the $Q$ and $K$ dimensions, the Arithmetic Intensity formulations are:
 
@@ -208,9 +216,9 @@ We collected the training GPU execution time and normalized the values with the 
 
 The GPU execution time scales significantly with $N$, but barely changes among different $k$. The Batched GEMM and Strided Batched GEMM scales much higher than the Naive GEMM, with around $3.3x, 13x and 53x$ of the $N=1024$ value, compared to the Naive GEMM's $2.4x, 6.7x and 22x$ to the corresponding $N=1024$ value. However, it doesn't mean that Naive GEMM is more efficent than Batched GEMM. We further provide the time ratio between Naive GEMM and Batched GEMM. When $N=1024$, the Naive GEMM constantly takes ~2.5x more time compared toi the Batched GEMM with all $k$. As $N$ scales, the gap between the two techniques narrows, and at $N=8192$, both methods produce similar performance.
 
-:::warning
-Wallclock time seems wrong. 
-:::
+![llama_training_wallclock_time_ratio](llama_training_wallclock_time_ratio.jpg)
+
+Despite of the advantage of GPU time on small $N$, the performance of Naive GEMM drastically dropped if taking launch overhead into account. It is about 35x to 147x slower than the Batched GEMM with varying $k$, which is as expected because as $k$ scales, the number of kernel launched will increase proportionally, accumulating the launch overhead.
 
 ### Inference
 
