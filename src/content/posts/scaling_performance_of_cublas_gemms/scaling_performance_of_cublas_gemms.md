@@ -210,7 +210,7 @@ The computed AI values across varying T are tabulated below:
 ### Training
 We collected the training GPU execution time and normalized the values with the corresponding $N=1024$ value. Since the Batched GEMM and Strided Batched GEMM have similar results, we will only show the Batched GEMM in the plot for simplicity.
 
-![normalized_gpu_exec_time](normalized_gpu_exec_time.jpg)
+![llama_training_normalized_gpu_exec_time](llama_training_normalized_gpu_exec_time.jpg)
 
 ![llama_training_gpu_time_ratio](llama_training_gpu_time_ratio.jpg)
 
@@ -222,7 +222,11 @@ Despite of the advantage of GPU time on small $N$, the performance of Naive GEMM
 
 ### Inference
 
+![llama_inference_normalized_gpu_exec_time](llama_inference_normalized_gpu_exec_time.jpg)
 
+![llama_training_gpu_time_ratio](llama_training_gpu_time_ratio.jpg)
+
+In inference, similar trend still persists. The GPU execution time scales with $N$, but the speed slows down. For example, in inference, the Batched GEMM with $k=32$ only takes 1.8x, 3x and 5.6x of GPU time spent by $N=1024$ for $N=2048, 4096, 8192$ respectively, whereas the in training, the numbers increases to $3.3x, 13x and 53x$ with same $N and k$, probably because of the smaller dimension of $Q$(from $T \times 128$ to $1 \times 128$) in inference causing less pressure on memory traffic. Similarly, the Batched GEMM also spent more GPU time compared to the Naive GEMM, but the initial gap at small $N$ enlarges. When $N=1024$, the Naive GEMM spent 7.3x~8.6x more time relative to the Batched GEMM in inference. However, this figure is only 2.5x in training. As $N$ keep increasing, the gap between two techniques still shrinks to 0, but in inference, but the changing rate slows down.
 
 
 
