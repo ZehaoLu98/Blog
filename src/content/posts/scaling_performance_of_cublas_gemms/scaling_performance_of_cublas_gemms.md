@@ -15,8 +15,8 @@ Under Construction!
 Attention layer is among the most time-consuming part of any LLM. It consists of multiple matrix multiplications that are theoretically bottlenecked by tensor core throughput according to the roofline model from this post[link]. However, our result reveals that the memory throughput instead is constraining the performance of the attention layer. This discrepancy between theory and reality leads to this post. 
 
 GEMM(i.e. General Matrix Multiplication) is always one of the hottest topic in HPC. The transformer architecture made this even more stark: every attention layer, every feed-forward block, every projection is fundamentally a GEMM, therefore even small amount of improvement on GEMM can cause huge impact on overall system performance. With the increasing problem size, the performance usually starts to be limited by either the memory throughput or compute resources. Through this post, I will introduce the GEMM performance of various matrix size, shape and batch size, revealing the bottleneck in different conditions. The attention layer GEMM performance of the popular open-source model, llama3, will also be provided for practical analysis.   
-# Performance Analysis
-## Setup
+
+# Setup
 We will profile 4 ways of computing GEMM using cuBLAS. To compare apples to apples, it is ensured that every cuBLAS GEMM perform the same amount of FLOPs with FP32 and running on the same device, which is an A100 (40GB, SXM4).
 
 ## Single Big GEMM
@@ -126,8 +126,7 @@ CHECK_CUBLAS(cublasSgemmStridedBatched(handle,
                                         d_C, m, stride_C,
                                         batch_size));
 ```
-
-## $k$ batches of $(N \times N) \times (N \times N)$
+# $k$ batches of $(N \times N) \times (N \times N)$
 We begin with square matrix multiplications, the simplest and most symmetric case. In batched methods, we perform k independent multiplications of $(N \times N) \times (N \times N)$. To ensure fair comparison across all four methods, we configure each to perform identical total FLOPs:
 
 | Method | Configuration | Total FLOPs |
@@ -163,10 +162,10 @@ Next we will take a more nuanced look at the GPU execution time. Since GPU execu
 
 Here we provide the ratio of total SASS instructions issued by the SMSP. It reveals a similar pattern to the GPU time: when $N=1024$, Naive GEMM issues more SASS instructions, whereas when $N=2560$ and $N=4096$, Naive GEMM issues less. This indicates that cuBLAS likely selects different algorithms or memory strategies for different values of $N$ heuristically, with a transition point occurring between $N=1024$ and $N=2560$. From $N=2560$ to $N=4096$, the instruction ratio of Batched GEMM and Strided Batched GEMM both reaches ~0.9, implying that they are using the same algorithm under the hood when L2 can't store any of the matrix. 
 
-## Practical Workload - llama 3.1
+# Practical Workload - llama 3.1
 To contextualize our analysis within realistic scenarios, we evaluate GEMM scaling performance across the attention mechanism ($QK^T$) of llama3.1-8B, llama3.1-70B, and llama3.1-405B variants.
 
-### Arithmetic Intensity Analysis
+## Arithmetic Intensity Analysis
 Arithmetic Intensity (AI) quantifies the computational density, more specifically, FLOPs per byte. High AI signifies compute-bound kernels where computation dominates, whereas low AI indicates memory-bound kernels where data movement constrains performance. This metric is essential for understanding the kernel behavior, therefore we will provide AI for both training and inference phases before going into full details.
 
 The matrix dimensions and attention head configuration are enumerated below for both Training and Inference:
@@ -207,7 +206,7 @@ The computed AI values across varying T are tabulated below:
 
  It is noteworthy that the AI of Inference reaches merely ~0.992, representing over 100× lower density than its training counterpart. As T scales, both training and inference AI converge toward 128 and 0.992 respectively. These metrics demonstrate that theotically, inference operates under severe memory bandwidth constraints, with computational resources substantially underutilized.
 
-### Training
+## Training
 We collected the training GPU execution time and normalized the values with the corresponding $N=1024$ value. Since the Batched GEMM and Strided Batched GEMM have similar results, we will only show the Batched GEMM in the plot for simplicity.
 
 ![llama_training_normalized_gpu_exec_time](llama_training_normalized_gpu_exec_time.jpg)
@@ -220,13 +219,13 @@ The GPU execution time scales significantly with $N$, but barely changes among d
 
 Despite of the advantage of GPU time on small $N$, the performance of Naive GEMM drastically dropped if taking launch overhead into account. It is about 35x to 147x slower than the Batched GEMM with varying $k$, which is as expected because as $k$ scales, the number of kernel launched will increase proportionally, accumulating the launch overhead.
 
-### Inference
+## Inference
 
 ![llama_inference_normalized_gpu_exec_time](llama_inference_normalized_gpu_exec_time.jpg)
 
-![llama_training_gpu_time_ratio](llama_training_gpu_time_ratio.jpg)
+![llama_inference_gpu_time_ratio](llama_inference_gpu_time_ratio.jpg)
 
-In inference, similar trend still persists. The GPU execution time scales with $N$, but the speed slows down. For example, in inference, the Batched GEMM with $k=32$ only takes 1.8x, 3x and 5.6x of GPU time spent by $N=1024$ for $N=2048, 4096, 8192$ respectively, whereas the in training, the numbers increases to $3.3x, 13x and 53x$ with same $N and k$, probably because of the smaller dimension of $Q$(from $T \times 128$ to $1 \times 128$) in inference causing less pressure on memory traffic. Similarly, the Batched GEMM also spent more GPU time compared to the Naive GEMM, but the initial gap at small $N$ enlarges. When $N=1024$, the Naive GEMM spent 7.3x~8.6x more time relative to the Batched GEMM in inference. However, this figure is only 2.5x in training. As $N$ keep increasing, the gap between two techniques still shrinks to 0, but in inference, but the changing rate slows down.
+In inference, similar trend still persists. The GPU execution time scales with $N$, but the speed slows down. For example, in inference, the Batched GEMM with $k=32$ only takes 1.8x, 3x and 5.6x of GPU time spent by $N=1024$ for $N=2048, 4096, 8192$ respectively, whereas the in training, the numbers increases to $3.3x, 13x and 53x$ with same $N and k$, probably because of the smaller dimension of $Q$(from $T \times 128$ to $1 \times 128$) in inference causing less pressure on memory traffic. Similarly, the Batched GEMM also spent more GPU time compared to the Naive GEMM, but the initial gap at small $N$ enlarges. When $N=1024$, the Naive GEMM spent 7.3x~8.6x more time relative to the Batched GEMM in inference. However, this figure is only 2.5x in training. As $N$ keep increasing, the gap between two techniques still shrinks to 0, but in inference, the changing rate slows down.
 
 
 
