@@ -200,7 +200,7 @@ The computed AI values across varying T are tabulated below:
  It is noteworthy that the AI of Inference reaches merely ~0.992, representing over 100× lower density than its training counterpart. As T scales, both training and inference AI converge toward 128 and 0.992 respectively. These metrics demonstrate that theotically, inference operates under severe memory bandwidth constraints, with computational resources substantially underutilized.
 
 ### Training
-We collected the training GPU execution time and normalized the values with $N=1024$ value in the same GEMM type and with same $k$. Since the Batched GEMM and Strided Batched GEMM have similar results, we will only show the Batched GEMM in the plot for simplicity.
+We collected the training GPU execution time and normalized the values with the corresponding $N=1024$ value. Since the Batched GEMM and Strided Batched GEMM have similar results, we will only show the Batched GEMM in the plot for simplicity.
 
 ![normalized_gpu_exec_time](normalized_gpu_exec_time.jpg)
 
