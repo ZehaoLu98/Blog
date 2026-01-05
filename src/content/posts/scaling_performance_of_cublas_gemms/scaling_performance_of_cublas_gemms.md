@@ -207,17 +207,17 @@ The computed AI values across varying T are tabulated below:
  It is noteworthy that the AI of Inference reaches merely ~0.992, representing over 100× lower density than its training counterpart. As T scales, both training and inference AI converge toward 128 and 0.992 respectively. These metrics demonstrate that theotically, inference operates under severe memory bandwidth constraints, with computational resources substantially underutilized.
 
 ## Training
-We collected the training GPU execution time and normalized the values with the corresponding $N=1024$ value. Since the Batched GEMM and Strided Batched GEMM have similar results, we will only show the Batched GEMM in the plot for simplicity.
+We measured the GPU execution time during training and normalized all values against their corresponding $N=1024$ baseline. Since Batched GEMM and Strided Batched GEMM exhibit nearly identical behavior, we present only Batched GEMM results in the plots for clarity and simplicity.
 
 ![llama_training_normalized_gpu_exec_time](llama_training_normalized_gpu_exec_time.jpg)
 
 ![llama_training_gpu_time_ratio](llama_training_gpu_time_ratio.jpg)
 
-The GPU execution time scales significantly with $N$, but barely changes among different $k$. The Batched GEMM and Strided Batched GEMM scales much higher than the Naive GEMM, with around 3.3x, 13x and 53x of the $N=1024$ value, compared to the Naive GEMM's $2.4x, 6.7x and 22x$ to the corresponding $N=1024$ value. However, it doesn't mean that Naive GEMM is more efficent than Batched GEMM. We further provide the time ratio between Naive GEMM and Batched GEMM. When $N=1024$, the Naive GEMM constantly takes ~2.5x more time compared toi the Batched GEMM with all $k$. As $N$ scales, the gap between the two techniques narrows, and at $N=8192$, both methods produce similar performance.
+The GPU execution time exhibits strong dependence on $N$ but remains relatively insensitive to variations in $k$. Batched GEMM and Strided Batched GEMM demonstrate more aggressive scaling than Naive GEMM, reaching approximately 3.3×, 13×, and 53× their respective $N=1024$ baselines, whereas Naive GEMM only scales to 2.4×, 6.7×, and 22× for the same values of $N$. However, this does not imply superior efficiency of Naive GEMM over Batched GEMM. The time ratio plot reveals that at $N=1024$, Naive GEMM consistently requires approximately 2.5× longer execution time than Batched GEMM across all values of $k$. As $N$ increases, this performance gap progressively narrows, with both methods achieving comparable performance at $N=8192$.
 
 ![llama_training_wallclock_time_ratio](llama_training_wallclock_time_ratio.jpg)
 
-Despite of the advantage of GPU time on small $N$, the performance of Naive GEMM drastically dropped if taking launch overhead into account. It is about 35x to 147x slower than the Batched GEMM with varying $k$, which is as expected because as $k$ scales, the number of kernel launched will increase proportionally, accumulating the launch overhead.
+Despite the GPU execution time advantage at small $N$, Naive GEMM performance degrades substantially when kernel launch overhead is considered. The wallclock time ranges from 35× to 147× slower than Batched GEMM across different values of $k$. This aligns with expectations: as $k$ increases, the number of kernel launches grows proportionally, causing launch overhead to accumulate and dominate total execution time.
 
 ## Inference
 
@@ -225,7 +225,11 @@ Despite of the advantage of GPU time on small $N$, the performance of Naive GEMM
 
 ![llama_inference_gpu_time_ratio](llama_inference_gpu_time_ratio.jpg)
 
-In inference, similar trend still persists. The GPU execution time scales with $N$, but the speed slows down. For example, in inference, the Batched GEMM with $k=32$ only takes 1.8x, 3x and 5.6x of GPU time spent by $N=1024$ for $N=2048, 4096, 8192$ respectively, whereas the in training, the numbers increases to 3.3x, 13x and 53x with same $N$ and $k$, probably because of the smaller dimension of $Q$(from $T \times 128$ to $1 \times 128$) in inference causing less pressure on memory traffic. Similarly, the Batched GEMM also spends more GPU time compared to the Naive GEMM, but the initial gap at small $N$ enlarges. When $N=1024$, the Naive GEMM spent 7.3x~8.6x more time relative to the Batched GEMM in inference. However, this figure is only 2.5x in training. As $N$ keep increasing, the gap between two techniques still shrinks to 0, but in inference, the changing rate slows down.
+During inference, similar trends emerge with notable differences in scaling behavior. GPU execution time continues to scale with $N$, but at a reduced rate. For instance, Batched GEMM with $k=32$ achieves only 1.8×, 3×, and 5.6× the $N=1024$ baseline for $N=2048, 4096, 8192$ respectively, compared to the much steeper 3.3×, 13×, and 53× scaling observed in training at identical $N$ and $k$ values. This attenuated scaling likely stems from the reduced $Q$ matrix dimensions (from $T \times 128$ to $1 \times 128$) during inference, which alleviates memory bandwidth pressure. While Batched GEMM still incurs higher GPU execution time than Naive GEMM, the initial performance gap at small $N$ widens considerably. At $N=1024$, Naive GEMM requires 7.3×–8.6× more time than Batched GEMM during inference, compared to only 2.5× during training. As $N$ continues to grow, the performance gap converges toward parity, though convergence occurs more gradually in the inference regime.
+
+![llama_inference_wallclock_time_ratio](llama_inference_wallclock_time_ratio.jpg)
+
+As anticipated, despite Naive GEMM's advantage in GPU execution time, kernel launch overhead remains the bottleneck for wallclock performance, making it approximately 35×–150× slower than Batched GEMM. However, as $N$ increases, the performance ratio between Naive GEMM and Batched GEMM decreases, particularly in the $k=128$ scenario. This effect arises from the increasing wallclock time of Batched GEMM, likely attributable to the substantial memory traffic generated by large $K$ matrices. Consequently, the growth in GPU execution time outpaces the accumulation of launch overhead, narrowing the performance gap between the two approaches.
 
 
 
