@@ -10,22 +10,22 @@ lang: 'en'
 ---
 
 # Introduction
-Some Context.
+In the previous post(link), we analyzed the performance characteristics of individual ranges within a single GPT-2 layer. Building on that foundation, this post examines how transformer performance scales along three critical dimensions: batch size (B), context length (T), and number of attention heads (NH). 
 
-In this post, we will present how LLM performance scales with increasing batch size(B), context length(T) and Head Count(H). The potential bottleneck of each block will also be discussed, comparing against the theotical roofline from the previous post here. 
+Understanding these scaling behaviors is crucial for optimizing LLM Performance, as each dimension affects computational complexity and memory requirements differently. For instance, context length has a quadratic impact on attention operations ($O(T^2)$), while batch size typically scales linearly. We will identify performance bottlenecks for each component and validate our findings against the theoretical roofline model established in the previous post.
 
 # Setup
-We test on the second layer of the transformer, deviding it into multiple blocks for nuanced breakdown of the performance. For each block, we vary three parameters:
+We profile the second layer of the transformer, decomposing it into multiple blocks for detailed performance analysis. For each block, we vary three parameters:
 
 | Parameter | Description| Values |
 |-----------|------------|--------|
-| B | number of batches | 4, 16 |
-| T | context length | from 64 to 1536 with interval of 64 |
-| H | number of heads in attention block | 4, 8, 12, 16, 32 |
+| B | Batch size | 4, 16 |
+| T | Context length | 64 to 1536 (interval of 64) |
+| NH | Number of attention heads | 4, 8, 12, 16, 32 |
 
-Unless explicitly stated, we use H=12 by default.
+Unless explicitly stated, we use NH=12 by default.
 
-Due to small dataset, only a subset of the whole combinations of B, T can be tested, with less T for higher B. If we keep increasing B, only handful T can be run, which is insufficient to compare against B=4 and B=16. Therefore, only 2 Bs are chosen to compare with each other.  
+Due to dataset constraints, only a subset of (B, T) combinations can be evaluated, with fewer context lengths available at higher batch sizes. Increasing B further would limit testing to only a handful of T values, providing insufficient data points for robust comparison with B=4 and B=16. Therefore, we restrict our analysis to two batch sizes to ensure comprehensive coverage across the context length dimension.  
 
 # GPU Time
 ## Varing T
@@ -69,3 +69,21 @@ Given A100's 108 SM and 64 Warps per SM in maximum, obviously the GPU is heavily
 ![wall_clock_time_abs_stacked_chart_b=16](wall_clock_time_abs_stacked_chart_b=16.png)
 In terms of wall clock time, the distriubtion shows a similar trend compared to the GPU execution time: due to $O(T^2)$ FLOPS and $O(T^2)$ loads/stores, attention_qk, attention_softmax, attention_v and feed_forward still dominate the wall clock time. An interesting point is that the feed_forward doesn't consume much wall clock time with smaller B and T despite of more kernel calls than other ranges, which can increases tens of microseconds of launch overhead. With $B=4$, $T=64$, the feed_forward wall clock time drops from 36.2% to 24.3%, and with $B=16$, $T=64$ it drops from 43.5% to 31.8% comparing the gpu time and wall clock time. However, this discrepancy quickly shrinks with increasing T, and eventually there is only minor difference between the two time metrics.
 
+# SASS Instruction
+![sass_load_distribution](sass_load_distribution.png)
+![sass_store_distribution](sass_store_distribution.png)
+
+Here we provide the sass instructions along with the DRAM accesses distributions among all ranges. Since some ranges only use shared memory and others use global memory, we sum the shared and global memroy for loads and stores respectively to measure the total amount of requests. The L2 hit rate is given within the parenthesis next to the DRAM access distribution. 
+
+The result shows that the sass store requests scales most for attention_qk and attention_softmax. On the other hand, attention_softmax and attention_v scales most significantly for sass loads. Note that these three ranges are executed in the sequnce of attention_qk, attention_softmax and attention_v. This reveals an interesting but easy-to-understand pattern: The stores requests of one range will cause one load in the subsequent range. This is simply because the output of a range becomes the input of the next range. Theotically, attention_qk produces a T x T matrice, therefore the store requests scales quadratically with T, and the loads of attention_softmax also scales like that. This also applies to attention_softmax and attention_v in the sass loads. On the other hand, matrices produced by other ranges contians only $O(T)$ and $O(1)$ elements, which explains the quick shift from feed_forward-dominated T=64 to attention-dominated T=1536 in both loads and stores. 
+
+# DRAM Accesses
+![dram_sectors_read_distribution](dram_sectors_read_distribution.png)
+![dram_sectors_write_distribution](dram_sectors_write_distribution.png)
+
+In terms of DRAM accesses, a similar pattern emerges. The three attention sub-blocks - attention_qk, attention_softmax, and attention_v - account for a substantial portion of DRAM traffic. Specifically, attention_qk and attention_softmax dominate write operations, while attention_softmax and attention_v dominate read operations. The L2 hit rate is provided in the parenthesis in case you are interested.
+
+![dram_throughput](dram_throughput.png)
+The DRAM throughput is displayed in the chart above, confirming our roofline model predictions. In both B=4 and B=16 scenarios, feed_forward, attention_get_qkv, and attention_att_proj utilize approximately 700-800 GB/s DRAM bandwidth, significantly below the 1600 GB/s peak DRAM throughput. In contrast, other ranges either reach near-peak performance (~1.4 TB/s) or exhibit an upward trend toward the peak. According to our analysis, these three lower-bandwidth ranges are compute-bound. 
+
+Notably, although attention_qk and attention_softmax are classified as compute-bound in the roofline analysis, they still saturate the DRAM bandwidth, appearing memory-bound in practice. This discrepancy occurs because theoretical compute-bound operations can become memory-bound due to hardware limitations in memory. We will explore this behaviour in depth in a follow-up post (link to post).
