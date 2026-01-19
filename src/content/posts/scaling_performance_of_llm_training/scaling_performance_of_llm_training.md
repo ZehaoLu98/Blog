@@ -10,7 +10,7 @@ lang: 'en'
 ---
 
 # Introduction
-In the previous post(link), we analyzed the performance characteristics of individual ranges within a single GPT-2 layer. Building on that foundation, this post examines how transformer performance scales along three critical dimensions: batch size (B), context length (T), and number of attention heads (NH). 
+In the previous [post](https://ml-memory-profiling-group.github.io/blog_v2/note/intro-to-llm/), we analyzed the performance characteristics of individual ranges within a single GPT-2 layer. Building on that foundation, this post examines how transformer performance scales along three critical dimensions: batch size (B), context length (T), and number of attention heads (NH). 
 
 Understanding these scaling behaviors is crucial for optimizing LLM Performance, as each dimension affects computational complexity and memory requirements differently. For instance, context length has a quadratic impact on attention ($O(T^2)$), while batch size typically scales linearly. We will identify performance bottlenecks for each component and validate our findings against the theoretical roofline model established in the previous post.
 
@@ -90,4 +90,4 @@ In terms of DRAM accesses, a similar pattern emerges. The three attention sub-bl
 ![dram_throughput](dram_throughput.png)
 The DRAM throughput is displayed in the chart above, confirming our roofline model predictions. In both $B=4$ and $B=16$ scenarios, feed_forward, attention_get_qkv, and attention_att_proj utilize approximately 700-800 GB/s DRAM bandwidth, significantly below the 1600 GB/s peak DRAM throughput. In contrast, other ranges either reach near-peak performance (~1.4 TB/s) or exhibit an upward trend toward the peak. According to our analysis, these three lower-bandwidth ranges are compute-bound. 
 
-Notably, although attention_qk and attention_softmax are classified as compute-bound in the roofline analysis, they still saturate the DRAM bandwidth, appearing memory-bound in practice. This discrepancy occurs because theoretical compute-bound operations can become memory-bound due to hardware limitations in memory. We will explore this behaviour in depth in a follow-up post (link to post).
+Notably, although attention_qk and attention_softmax are classified as compute-bound in the roofline analysis, they still saturate the DRAM bandwidth, appearing memory-bound in practice. This discrepancy occurs because theoretical compute-bound operations can become memory-bound due to hardware limitations in memory. We will explore this behaviour in depth in a follow-up [post](https://ml-memory-profiling-group.github.io/blog_v2/note/scaling_performance_of_cublas_gemm/scaling_performance_of_cublas_gemms/).
