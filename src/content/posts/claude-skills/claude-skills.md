@@ -35,11 +35,11 @@ Skills live in the `.claude/skills/` directory of your project:
 .claude/
 └── skills/
     ├── create-blog/
-    │   └── create-blog.md
-    ├── python-script/
-    │   └── python-script.md
-    └── review-code/
-        └── review-code.md
+    │   └── SKILL.md
+    ├── create-skill/
+    │   └── SKILL.md
+    └── python-script/
+        └── SKILL.md
 ```
 
 :::note
