@@ -43,7 +43,7 @@ Skills live in the `.claude/skills/` directory of your project:
 ```
 
 :::note
-Each skill should be in its own directory, with the markdown file matching the directory name.
+Each skill should be in its own directory, with the skill instructions in a file named `SKILL.md`.
 :::
 
 ## Skill Format
@@ -128,7 +128,7 @@ mkdir -p .claude/skills/my-skill
 
 ## Step 2: Write the Skill File
 
-Create `.claude/skills/my-skill/my-skill.md`:
+Create `.claude/skills/my-skill/SKILL.md`:
 
 ```markdown
 ---
