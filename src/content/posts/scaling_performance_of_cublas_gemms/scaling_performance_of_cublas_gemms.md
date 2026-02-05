@@ -3,7 +3,7 @@ title: Scaling Performance of Cublas GEMMs
 published: 2025-12-29
 tags: [GPU, GEMM, Profiling]
 category: Performance Analysis
-draft: false
+draft: true
 lang: 'en'
 ---
 
