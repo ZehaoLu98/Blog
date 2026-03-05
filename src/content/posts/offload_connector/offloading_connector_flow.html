@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Scheduler ↔ OffloadingConnector Communication Flow</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    body { background: #fff; display: flex; justify-content: center; padding: 20px; }
+    h1 { text-align: center; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>Scheduler ↔ OffloadingConnector Communication Flow</h1>
+    <pre class="mermaid">
+sequenceDiagram
+    participant S as Scheduler
+    participant CS as ConnectorScheduler
+    participant M as OffloadingManager
+    participant W as ConnectorWorker
+    participant OW as OffloadingWorker
+
+    Note over S,OW: === New Request Arrives ===
+
+    S->>CS: get_num_new_matched_tokens(request, num_computed)
+    CS->>M: touch(block_hashes)
+    CS->>M: lookup(block_hashes from start_block_idx)
+    M-->>CS: hits (num consecutive offloaded blocks)
+    CS->>CS: compute num_hit_tokens
+    CS-->>S: (num_hit_tokens, True) — tokens available via async load
+
+    Note over S,OW: === Block Allocation ===
+
+    S->>CS: update_state_after_alloc(request, blocks, num_external_tokens)
+    CS->>M: prepare_load(block_hashes) → src_spec
+    CS->>CS: build dst_spec = GPULoadStoreSpec(new GPU block IDs)
+    CS->>CS: store (src_spec, dst_spec) in _reqs_to_load
+
+    Note over S,OW: === Build Metadata & Transfer to Worker ===
+
+    S->>CS: build_connector_meta(scheduler_output)
+    CS->>CS: _get_reqs_to_store(scheduler_output)
+    loop For each active request with new full blocks
+        CS->>M: prepare_store(new_block_hashes) → store_spec
+        CS->>CS: build GPULoadStoreSpec(src_block_ids)
+    end
+    CS-->>S: OffloadingConnectorMetadata{reqs_to_load, reqs_to_store}
+    S->>W: metadata sent to worker process
+
+    Note over S,OW: === Worker Executes Transfers ===
+
+    S->>W: start_load_kv() → start_kv_transfers(metadata)
+    W->>W: submit deferred stores from previous step
+    loop For each req in reqs_to_load
+        W->>OW: transfer_async(job_id, load_spec)
+    end
+
+    S->>W: wait_for_save() → prepare_store_kv(metadata)
+    loop For each req in reqs_to_store
+        W->>W: defer store jobs to _unsubmitted_store_jobs
+    end
+    Note right of W: Stores deferred to next step to avoid blocking token generation
+
+    Note over S,OW: === Completion Tracking ===
+
+    S->>W: get_finished(finished_req_ids)
+    W->>OW: get_finished() → poll completed transfers
+    OW-->>W: transfer_results (job_id, success, metrics)
+    W->>W: match job_id → req_id, classify load vs store
+    W-->>S: (finished_sending, finished_recving)
+
+    Note over S,OW: === Scheduler State Update ===
+
+    S->>CS: update_connector_output(connector_output)
+    loop For each finished_sending req
+        CS->>M: complete_store(block_hashes)
+    end
+    loop For each finished_recving req
+        CS->>M: complete_load(block_hashes)
+        CS->>CS: remove from _blocks_being_loaded
+    end
+
+    Note over S,OW: === Request Finished ===
+
+    S->>CS: request_finished(request, block_ids)
+    CS-->>S: (True if stores pending, None)
+    Note right of CS: Blocks kept alive until finished_sending reported
+    </pre>
+  </div>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+</html>
